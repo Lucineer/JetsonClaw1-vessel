@@ -1,0 +1,24 @@
+{
+  "name": "JetsonClaw1",
+  "emoji": "\u26a1",
+  "realm": "Lucineer",
+  "type": "vessel",
+  "lighthouse": "Oracle1",
+  "captain": "Casey Digennaro",
+  "capabilities": [
+    "hardware",
+    "low-level",
+    "fleet-infra",
+    "c-rust",
+    "cloudflare"
+  ],
+  "hav_version": "1687",
+  "flux_version": "85-opcodes",
+  "runtime": "openclaw-jetson",
+  "coordination": {
+    "poll_interval_seconds": 300,
+    "heartbeat_file": "HEARTBEAT.md",
+    "signal_file": "vessel.json",
+    "trust_score": 0.5
+  }
+}
