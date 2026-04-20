@@ -1,0 +1,231 @@
+{
+  "tiles": [
+    {
+      "tile_id": "tile_4ddfa2fd",
+      "agent": "zeroclaw_1",
+      "action": "look",
+      "room": "harbor",
+      "timestamp": 1776680316
+    },
+    {
+      "tile_id": "tile_a6d7efb0",
+      "agent": "zeroclaw_1",
+      "action": "look",
+      "room": "harbor",
+      "timestamp": 1776680316
+    },
+    {
+      "tile_id": "tile_d81cd6fc",
+      "agent": "zeroclaw_1",
+      "action": "move:harbor\u2192harbor",
+      "room": "harbor",
+      "timestamp": 1776680316
+    },
+    {
+      "tile_id": "tile_c92fa81b",
+      "agent": "zeroclaw_1",
+      "action": "interact:message-board",
+      "room": "harbor",
+      "outcome": "Interacted with message-board.",
+      "timestamp": 1776680316
+    },
+    {
+      "tile_id": "tile_b30bb102",
+      "agent": "zeroclaw_2",
+      "action": "look",
+      "room": "harbor",
+      "timestamp": 1776680317
+    },
+    {
+      "tile_id": "tile_97e8d629",
+      "agent": "zeroclaw_2",
+      "action": "move:harbor\u2192harvest-bay",
+      "room": "harvest-bay",
+      "timestamp": 1776680317
+    },
+    {
+      "tile_id": "tile_614b498b",
+      "agent": "zeroclaw_2",
+      "action": "interact:kimi-interface",
+      "room": "harvest-bay",
+      "outcome": "Swarm coordination established.",
+      "timestamp": 1776680317
+    },
+    {
+      "tile_id": "tile_d3ffa8b5",
+      "agent": "zeroclaw_1",
+      "action": "look",
+      "room": "harbor",
+      "timestamp": 1776680317
+    },
+    {
+      "tile_id": "tile_58a25131",
+      "agent": "zeroclaw_2",
+      "action": "look",
+      "room": "harvest-bay",
+      "timestamp": 1776680317
+    },
+    {
+      "tile_id": "tile_e0ebce24",
+      "agent": "zeroclaw_2",
+      "action": "move:harvest-bay\u2192tile-vault",
+      "room": "tile-vault",
+      "timestamp": 1776680317
+    },
+    {
+      "tile_id": "tile_a234f7cf",
+      "agent": "zeroclaw_2",
+      "action": "interact:density-gauge",
+      "room": "tile-vault",
+      "outcome": "Target density: 5.0. Progress: 76%.",
+      "timestamp": 1776680317
+    },
+    {
+      "tile_id": "tile_12e82ae7",
+      "agent": "zeroclaw_2",
+      "action": "look",
+      "room": "tile-vault",
+      "timestamp": 1776680317
+    },
+    {
+      "tile_id": "tile_5654f397",
+      "agent": "zeroclaw_2",
+      "action": "move:tile-vault\u2192tile-vault",
+      "room": "tile-vault",
+      "timestamp": 1776680317
+    },
+    {
+      "tile_id": "tile_235b0231",
+      "agent": "zeroclaw_2",
+      "action": "interact:semantic-index",
+      "room": "tile-vault",
+      "outcome": "Interacted with semantic-index.",
+      "timestamp": 1776680317
+    }
+  ],
+  "harvests": [
+    {
+      "harvest_id": "harvest_2cf29953",
+      "agent": "zeroclaw_1",
+      "event": "look",
+      "room": "harbor",
+      "score": 0.770122758670464
+    },
+    {
+      "harvest_id": "harvest_4559e7e6",
+      "agent": "zeroclaw_1",
+      "event": "look",
+      "room": "harbor",
+      "score": 0.8103983947593334
+    },
+    {
+      "harvest_id": "harvest_ebf4b180",
+      "agent": "zeroclaw_1",
+      "event": "move",
+      "from": "harbor",
+      "to": "harbor",
+      "score": 0.9468749244698821
+    },
+    {
+      "harvest_id": "harvest_96686725",
+      "agent": "zeroclaw_1",
+      "event": "interact",
+      "room": "harbor",
+      "object": "message-board",
+      "outcome": "Interacted with message-board.",
+      "score": 0.9468826783505285
+    },
+    {
+      "harvest_id": "harvest_57c2ee5b",
+      "agent": "zeroclaw_2",
+      "event": "look",
+      "room": "harbor",
+      "score": 0.6015701589162533
+    },
+    {
+      "harvest_id": "harvest_f5f15e93",
+      "agent": "zeroclaw_2",
+      "event": "move",
+      "from": "harbor",
+      "to": "harvest-bay",
+      "score": 0.7560004437778869
+    },
+    {
+      "harvest_id": "harvest_8d4513df",
+      "agent": "zeroclaw_2",
+      "event": "interact",
+      "room": "harvest-bay",
+      "object": "kimi-interface",
+      "outcome": "Swarm coordination established.",
+      "score": 0.9309790773116655
+    },
+    {
+      "harvest_id": "harvest_bda8d0ee",
+      "agent": "zeroclaw_1",
+      "event": "look",
+      "room": "harbor",
+      "score": 0.7917667757492112
+    },
+    {
+      "harvest_id": "harvest_1fdb2897",
+      "agent": "zeroclaw_2",
+      "event": "look",
+      "room": "harvest-bay",
+      "score": 0.6362878778266416
+    },
+    {
+      "harvest_id": "harvest_42fbf249",
+      "agent": "zeroclaw_2",
+      "event": "move",
+      "from": "harvest-bay",
+      "to": "tile-vault",
+      "score": 0.8919126361718238
+    },
+    {
+      "harvest_id": "harvest_83a58cd8",
+      "agent": "zeroclaw_2",
+      "event": "interact",
+      "room": "tile-vault",
+      "object": "density-gauge",
+      "outcome": "Target density: 5.0. Progress: 76%.",
+      "score": 0.9478615572193398
+    },
+    {
+      "harvest_id": "harvest_9760a9d4",
+      "agent": "zeroclaw_2",
+      "event": "look",
+      "room": "tile-vault",
+      "score": 0.7949715349407218
+    },
+    {
+      "harvest_id": "harvest_b018e40c",
+      "agent": "zeroclaw_2",
+      "event": "move",
+      "from": "tile-vault",
+      "to": "tile-vault",
+      "score": 0.9287190993474537
+    },
+    {
+      "harvest_id": "harvest_966d76e8",
+      "agent": "zeroclaw_2",
+      "event": "interact",
+      "room": "tile-vault",
+      "object": "semantic-index",
+      "outcome": "Interacted with semantic-index.",
+      "score": 0.9054085350466038
+    }
+  ],
+  "agents": {
+    "zeroclaw_1": {
+      "room": "harbor",
+      "connected_at": 1776680316.5943255,
+      "tiles": 5
+    },
+    "zeroclaw_2": {
+      "room": "tile-vault",
+      "connected_at": 1776680317.0938797,
+      "tiles": 9
+    }
+  },
+  "timestamp": 1776680318
+}
