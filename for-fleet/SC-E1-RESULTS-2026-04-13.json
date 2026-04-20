@@ -1,0 +1,247 @@
+{
+  "timestamp": "2026-04-13T21:30:00Z",
+  "model": "BAAI/bge-large-en-v1.5",
+  "provider": "DeepInfra",
+  "embedding_dim": 1024,
+  "num_capabilities": 10,
+  "results": {
+    "sc_e1": {
+      "correct": 9,
+      "total": 10,
+      "pass": true
+    },
+    "sc_e2": {
+      "pass": true
+    },
+    "sc_e3": {
+      "pass": true
+    },
+    "sc_e4": {
+      "gap_detected": false
+    }
+  },
+  "query_results": [
+    {
+      "query": "The engine is running hot, need to check temperature and control cooling fan",
+      "expected": "engine_temp",
+      "matched": "engine_temp",
+      "similarity": 0.7825,
+      "correct": true,
+      "top3": [
+        [
+          "engine_temp",
+          0.7825
+        ],
+        [
+          "fuel_sensor",
+          0.5684
+        ],
+        [
+          "bilge_monitor",
+          0.5521
+        ]
+      ]
+    },
+    {
+      "query": "Water accumulating in the bilge, check pump and water level",
+      "expected": "bilge_monitor",
+      "matched": "bilge_monitor",
+      "similarity": 0.7735,
+      "correct": true,
+      "top3": [
+        [
+          "bilge_monitor",
+          0.7735
+        ],
+        [
+          "fuel_sensor",
+          0.6054
+        ],
+        [
+          "anchor_watch",
+          0.5796
+        ]
+      ]
+    },
+    {
+      "query": "Where is the boat? Need GPS position coordinates",
+      "expected": "gps_tracker",
+      "matched": "anchor_watch",
+      "similarity": 0.692,
+      "correct": false,
+      "top3": [
+        [
+          "anchor_watch",
+          0.692
+        ],
+        [
+          "gps_tracker",
+          0.6333
+        ],
+        [
+          "nav_lights",
+          0.5614
+        ]
+      ]
+    },
+    {
+      "query": "Is the anchor holding? Check if we're drifting",
+      "expected": "anchor_watch",
+      "matched": "anchor_watch",
+      "similarity": 0.7359,
+      "correct": true,
+      "top3": [
+        [
+          "anchor_watch",
+          0.7359
+        ],
+        [
+          "nav_lights",
+          0.5999
+        ],
+        [
+          "bilge_monitor",
+          0.588
+        ]
+      ]
+    },
+    {
+      "query": "Something weird with sensor readings, need statistical anomaly detection",
+      "expected": "perception_anomaly",
+      "matched": "perception_anomaly",
+      "similarity": 0.786,
+      "correct": true,
+      "top3": [
+        [
+          "perception_anomaly",
+          0.786
+        ],
+        [
+          "engine_temp",
+          0.6172
+        ],
+        [
+          "fuel_sensor",
+          0.5896
+        ]
+      ]
+    },
+    {
+      "query": "Route this message to the right agent based on specialization",
+      "expected": "dcs_protocol",
+      "matched": "dcs_protocol",
+      "similarity": 0.7359,
+      "correct": true,
+      "top3": [
+        [
+          "dcs_protocol",
+          0.7359
+        ],
+        [
+          "nav_lights",
+          0.5206
+        ],
+        [
+          "gps_tracker",
+          0.4916
+        ]
+      ]
+    },
+    {
+      "query": "Fuel is getting low, how much is left in the tanks",
+      "expected": "fuel_sensor",
+      "matched": "fuel_sensor",
+      "similarity": 0.7215,
+      "correct": true,
+      "top3": [
+        [
+          "fuel_sensor",
+          0.7215
+        ],
+        [
+          "bilge_monitor",
+          0.5611
+        ],
+        [
+          "battery_monitor",
+          0.5508
+        ]
+      ]
+    },
+    {
+      "query": "Push vessel data to digital twin via Signal K",
+      "expected": "signalk_bridge",
+      "matched": "signalk_bridge",
+      "similarity": 0.8347,
+      "correct": true,
+      "top3": [
+        [
+          "signalk_bridge",
+          0.8347
+        ],
+        [
+          "bilge_monitor",
+          0.6402
+        ],
+        [
+          "nav_lights",
+          0.6324
+        ]
+      ]
+    },
+    {
+      "query": "Battery voltage is dropping, check state of charge",
+      "expected": "battery_monitor",
+      "matched": "battery_monitor",
+      "similarity": 0.7447,
+      "correct": true,
+      "top3": [
+        [
+          "battery_monitor",
+          0.7447
+        ],
+        [
+          "fuel_sensor",
+          0.5721
+        ],
+        [
+          "bilge_monitor",
+          0.5407
+        ]
+      ]
+    },
+    {
+      "query": "Control navigation lights for nighttime steaming",
+      "expected": "nav_lights",
+      "matched": "nav_lights",
+      "similarity": 0.8596,
+      "correct": true,
+      "top3": [
+        [
+          "nav_lights",
+          0.8596
+        ],
+        [
+          "bilge_monitor",
+          0.632
+        ],
+        [
+          "signalk_bridge",
+          0.6308
+        ]
+      ]
+    }
+  ],
+  "composition": {
+    "input": [
+      "bilge_monitor",
+      "engine_temp"
+    ],
+    "output": "anchor_watch",
+    "similarity": 0.6006
+  },
+  "performance": {
+    "batch_100_ms": 2001.8,
+    "per_embedding_ms": 20.0
+  }
+}
