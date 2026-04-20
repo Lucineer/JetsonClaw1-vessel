@@ -1,0 +1,24 @@
+# Secrets (NEVER commit these)
+MEMORY.md
+memory/
+secrets.env
+.env
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.pyc
+
+# Generated data
+data/tiles/
+*.json.bak
+tmp-*/
+heartbeat-state.json
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
