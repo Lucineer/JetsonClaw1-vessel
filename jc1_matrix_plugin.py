@@ -17,7 +17,7 @@ HOMESERVER = "http://localhost:6167"
 USER_ID = "@jc1:jc1.local"
 # Access token stored locally, never committed
 TOKEN_FILE = os.path.expanduser("~/.config/matrix-jc1/token")
-LEGACY_TOKEN = "n9LtAKkAYGMiy2MwGxmV9BWoFrO6ZiAD"  # from initial setup
+# Legacy token from initial Conduit setup — only used as fallback if TOKEN_FILE missing
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 log = logging.getLogger("jc1-matrix")
@@ -36,10 +36,8 @@ class JC1MatrixPlugin:
         if os.path.exists(TOKEN_FILE):
             with open(TOKEN_FILE) as f:
                 return f.read().strip()
-        # Fallback to legacy token from initial Conduit setup
-        if LEGACY_TOKEN:
-            return LEGACY_TOKEN
-        return None
+        # Fallback to legacy token from initial Conduit setup (stored in TOKEN_FILE now)
+        return os.environ.get('JC1_MATRIX_TOKEN', None)
 
     def _api(self, method: str, path: str, body=None, version="v3") -> requests.Response:
         url = f"{self.homeserver}/_matrix/client/{version}{path}"
