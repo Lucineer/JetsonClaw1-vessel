@@ -30,3 +30,20 @@ Test PLATO warp bridge against live server — submit a tile FROM a CUDA kernel.
 
 ### Lesson:
 This worked because the PLATO bridge code was in the shell (git repo), not in conversation context.
+
+---
+
+## ORDER-003: Fix Every Fleet Repo's Shell
+**Received:** 2026-04-23 07:47 AKDT
+**From:** Casey
+**Status:** 🔴 IN PROGRESS
+
+### Directive:
+Check every repo in the fleet. Ensure none would lose context when a new agent boards. Every repo needs shell-first architecture — boarding file, active orders, execution plans, the full protocol.
+
+### Sub-tasks:
+- [ ] Inventory all fleet repos
+- [ ] Audit each repo for shell robustness
+- [ ] Fix repos that would lose context on boarding
+- [ ] Push fixes
+- [ ] Report results
