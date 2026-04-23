@@ -7,7 +7,7 @@
 ## ORDER-001: Shell-First Architecture
 **Received:** 2026-04-23 07:35 AKDT
 **From:** Casey
-**Status:** 🔴 IN PROGRESS
+**Status:** 🟢 COMPLETE (JC1 shell built, fleet bottle sent)
 
 ### Directive:
 Remake the system so that:
@@ -33,6 +33,23 @@ Remake the system so that:
 - Casey: "you are replaceable. your shell is not."
 - This is the HIGHEST priority directive
 - Must prove to Casey that orders cannot be lost
+
+---
+
+## ORDER-003: Fix Every Fleet Repo's Shell
+**Received:** 2026-04-23 07:47 AKDT
+**From:** Casey
+**Status:** 🔴 IN PROGRESS
+
+### Directive:
+Check every repo in the fleet. Ensure none would lose context when a new agent boards. Every repo needs shell-first architecture — boarding file, active orders, execution plans, the full protocol.
+
+### Sub-tasks:
+- [x] Inventory all fleet repos under Lucineer org (100 repos)
+- [x] Audit each repo for shell robustness (97/100 had NO shell)
+- [x] Fix repos that would lose context on boarding (98 repos fixed)
+- [x] Push fixes (98 commits pushed across 100 repos)
+- [ ] Verify results and report to Casey
 
 ---
 
