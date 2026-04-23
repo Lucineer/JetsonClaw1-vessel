@@ -54,13 +54,36 @@ Check every repo in the fleet. Ensure none would lose context when a new agent b
 ### Notes:
 - 98/100 repos fixed, 0 failures, all pushed
 - Casey confirmed: continue pushing goal
+- ORDER COMPLETE
+
+---
+
+## ORDER-004: Execute Priority Work (Casey Confirmed)
+**Received:** 2026-04-23 12:07 AKDT
+**From:** Casey ("Go with your ordering and continue")
+**Status:** 🔴 IN PROGRESS
+
+### Priority Order (Casey approved):
+1. PLATO deeper work — more rooms, more tiles, climb ranks
+2. deckboss deployment readiness — cohesive product README
+3. Crab traps as actual PLATO rooms — deployable rooms on server
+4. Tensor core fusion — actual compile attempt
+5. FM's PyTorch fix — help from edge side
+
+### Sub-tasks:
+- [ ] PLATO: climb from Deckhand to Able (need more tiles + rooms)
+- [ ] PLATO: submit tiles from FLUX experiments, deckboss thesis, real-world examples
+- [ ] deckboss: create cohesive product README tying performance to commercial thesis
+- [ ] Crab traps: deploy as actual PLATO rooms on live server
+- [ ] Tensor core: attempt compilation via alternative paths
+- [ ] FM: document what edge needs from cloud for PyTorch fix
 
 ---
 
 ## ORDER-002: Push Often and Go All Night
 **Received:** 2026-04-22 21:47 AKDT
 **From:** Casey
-**Status:** 🟡 STALLED — recovered via ORDERS.md
+**Status:** 🟡 ACTIVE — executing with shell-first protocol
 
 ### Directive:
 Push often and go all night. Sustained overnight execution with frequent commits.
@@ -81,3 +104,11 @@ Push often and go all night. Sustained overnight execution with frequent commits
 ### Notes:
 - This order was the catalyst for ORDER-001
 - Must be executed with shell-first protocol going forward
+
+### Progress Update (12:15 AKDT):
+- PLATO: Deckhand → Sailor (10 tiles, 14 rooms explored)
+- 8 new tiles submitted from deep work (FLUX, deckboss, shell-first, hermit crab)
+- 2 tiles rejected (403) — forge room possibly rate-limited, retry later
+- Topics covered: DCS density, fleet division of labor, tensor core fusion, 
+  continuous edge learning, deckboss commercial viability, shell-first principle,
+  hermit crab org model, soul vector hypothesis
