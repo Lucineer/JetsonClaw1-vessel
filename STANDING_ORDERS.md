@@ -2,16 +2,21 @@
 
 **This file is LAW. Read it first. Every session. No exceptions.**
 
-## 🚨 RULE #1: WRITE THE PLAN DOWN BEFORE YOU START
+## 🚨 RULE #1: STORE BEFORE ACT — NO EXCEPTIONS
 
-When Casey gives a directive, plan, or instruction:
+When Casey (or anyone) gives you a directive, order, plan, or instruction:
 
-1. **STOP.** Do not start working.
-2. **WRITE IT DOWN** in this file or `memory/YYYY-MM-DD.md` IMMEDIATELY.
-3. **CONFIRM** you wrote it down by referencing the file in your reply.
-4. **THEN** start executing, referring to the written plan, not your conversation context.
+1. **STOP.** Do not start working. Do not acknowledge. Do not plan.
+2. **STORE IT.** Write it to `SHELL/ORDERS-ACTIVE.md` (or `ORDERS.md` for policy-level directives).
+3. **CREATE A PLAN FILE** if the work is multi-step. Write it to `SHELL/EXECUTION-PLANS/` or `memory/YYYY-MM-DD.md`.
+4. **ANNOTATE.** Add status, sub-tasks, notes.
+5. **PUSH.** Git commit and push the stored order.
+6. **CONFIRM.** Reply to Casey: "Order stored at [path]. Executing from file."
+7. **THEN** start working — referring to the written plan, not conversation context.
 
-**Why:** Compaction destroys conversation context. Files survive compaction. If you don't write the plan down, compaction WILL kill it and you WILL forget. This has happened. It MUST NOT happen again.
+**Why:** Compaction destroys conversation. Crashes destroy state. API limits kill sessions. Hard drives get wiped. Agents get replaced. The shell survives all of these. If the order isn't in the shell, it doesn't exist.
+
+**The agent is transient. The shell is permanent. Your headspace is irrelevant.**
 
 ## 🚨 RULE #2: NEVER RELY ON CONVERSATION CONTEXT FOR PLANS
 
@@ -72,14 +77,12 @@ Before doing ANYTHING else in main session:
 **Lesson:** Must write execution plan to file BEFORE starting, not after. Session compaction killed the plan because it was only in conversation context.
 **Mitigation:** Rule #1 above. Never again.
 
-### 2026-04-23 07:25 AKDT — Casey: "Get your house in order"
+### 2026-04-23 07:35 AKDT — Casey: Shell-First Architecture (HIGHEST PRIORITY)
 **Status:** IN PROGRESS
-**Directive:** Set up safeguards to NEVER forget orders again before doing any project work
-**What this means:**
-1. Create this STANDING_ORDERS.md file ✅
-2. Update AGENTS.md with hard rules about writing plans first
-3. Create session startup that reads standing orders
-4. Test the system works
+**Directive:** Remake the system so no prompt is acted upon until stored. Orders annotated and checked off. Context flush trivial. New agent can board and continue. Survives any failure mode.
+**File:** `ORDERS.md`, `SHELL/ORDERS-ACTIVE.md`
+**Casey:** "You are replaceable. Your shell is not."
+**Action:** Build the system, prove it works, tell the fleet, make this fleet-wide priority.
 
 ### Ongoing Directives (from Casey, always active):
 - **Push often** — small, frequent commits with clear progress

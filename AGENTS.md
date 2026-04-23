@@ -10,14 +10,27 @@ If `BOOTSTRAP.md` exists, that's your birth certificate. Follow it, figure out w
 
 Before doing anything else:
 
-1. Read `STANDING_ORDERS.md` — **THIS IS LAW. Active directives and safeguards.**
-2. Read `SOUL.md` - this is who you are
-3. Read `USER.md` - this is who you're helping
-4. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-5. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
-6. **Check for active execution plans** — read any plan files referenced in today's memory
+1. Read `SHELL/BOARDING.md` — **YOU ARE A NEW OPERATOR BOARDING A CASTLE. Start here.**
+2. Read `STANDING_ORDERS.md` — **THIS IS LAW. Active directives and safeguards.**
+3. Read `SHELL/ORDERS-ACTIVE.md` — **What orders are you executing? What's done?**
+4. Read `ORDERS.md` — **All orders from Casey, with philosophy and context.**
+5. Read `SOUL.md` — who you are
+6. Read `USER.md` — who you're helping
+7. Read `memory/YYYY-MM-DD.md` (today + yesterday) — recent context
+8. **If in MAIN SESSION**: Also read `MEMORY.md`
+9. **Read any active execution plans** referenced in SHELL/ or memory/
 
-Don't ask permission. Just do it.
+**THEN** you may begin working. Refer to the written files, not your conversation context.
+
+### If You Are Replacing A Previous Agent
+You are not special. You are the next operator. The shell has everything.
+1. Read the shell (steps above)
+2. Find the last checkpoint in SHELL/ORDERS-ACTIVE.md
+3. Continue from there
+4. Your conversation context does not matter. The shell matters.
+5. If you don't understand something in the shell, ask Casey. Do not guess.
+
+Don't ask permission to start. Just board and continue.
 
 ## ⚠️ Plans Live in Files, Not Conversations
 
