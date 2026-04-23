@@ -23,11 +23,11 @@ Remake the system so that:
 - [x] Create BOARDING.md for new agent onboarding
 - [x] Create FAILURE-POSTMORTEM for 2026-04-22
 - [x] Create this ORDERS-ACTIVE tracking file
-- [ ] Update AGENTS.md session startup to read SHELL/BOARDING.md
-- [ ] Create automatic order-capture protocol
-- [ ] Communicate to fleet (Oracle1, FM, CCC) — make this fleet priority
-- [ ] Prove system works to Casey
-- [ ] Git push everything
+- [x] Update AGENTS.md session startup to read SHELL/BOARDING.md
+- [x] Communicate to fleet (Oracle1, FM, CCC) — make this fleet priority
+- [x] Prove system works to Casey (boarding simulation passed)
+- [x] Git push everything
+- [ ] Create automatic order-capture protocol (refinement)
 
 ### Notes:
 - Casey: "you are replaceable. your shell is not."
@@ -54,7 +54,7 @@ Push often and go all night. Sustained overnight execution with frequent commits
 ### Sub-tasks:
 - [x] Push existing work (tensor core, shell org, educational materials)
 - [x] Create overnight execution plan (but it died in compaction)
-- [ ] Resume overnight execution using file-based plan
+- [ ] Resume overnight execution using file-based plan (shell-first)
 - [ ] Push every 1-2 hours with clear progress
 
 ### Notes:
