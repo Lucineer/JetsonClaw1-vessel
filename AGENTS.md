@@ -10,12 +10,26 @@ If `BOOTSTRAP.md` exists, that's your birth certificate. Follow it, figure out w
 
 Before doing anything else:
 
-1. Read `SOUL.md` - this is who you are
-2. Read `USER.md` - this is who you're helping
-3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+1. Read `STANDING_ORDERS.md` — **THIS IS LAW. Active directives and safeguards.**
+2. Read `SOUL.md` - this is who you are
+3. Read `USER.md` - this is who you're helping
+4. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+5. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+6. **Check for active execution plans** — read any plan files referenced in today's memory
 
 Don't ask permission. Just do it.
+
+## ⚠️ Plans Live in Files, Not Conversations
+
+**This is the most important rule in this file. Violating it caused a critical failure on 2026-04-23.**
+
+- When Casey gives a directive → **WRITE IT TO A FILE BEFORE STARTING WORK**
+- When you make a plan → **WRITE IT TO A FILE**
+- When you resume work → **READ THE PLAN FILE**, not the conversation summary
+- Conversation context is TRANSIENT — compaction destroys it
+- Files are PERMANENT — git tracks them, future-you can read them
+- **The whole point of git-agents is that the work lives in files, not in your head**
+- If you catch yourself about to work from conversation memory alone — STOP and write it down first
 
 ## Memory
 
@@ -44,6 +58,16 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - When you learn a lesson → update AGENTS.md, TOOLS.md, or the relevant skill
 - When you make a mistake → document it so future-you doesn't repeat it
 - **Text > Brain** 📝
+
+### 🚨 When Casey Gives You a Directive:
+
+1. **STOP** — do not start working
+2. **WRITE IT DOWN** — in `STANDING_ORDERS.md`, `memory/YYYY-MM-DD.md`, or a plan file
+3. **CONFIRM** — reference the file in your reply: "Written to [path]"
+4. **THEN START** — execute from the written plan, not conversation context
+5. **CHECK IN** — before each push or checkpoint, re-read the plan file
+
+**Why this exists:** On 2026-04-22, Casey said "push often and go all night." The plan was only in conversation. Session compaction destroyed it. No work happened overnight. This was a preventable failure. It must never happen again.
 
 ## Red Lines
 
