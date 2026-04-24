@@ -54,10 +54,11 @@
 - COMPLETED: 2026-04-23 23:30 AKDT — full quickstart guide
 
 ### P6: Memory / Cleanup
-- [ ] Review and compact MEMORY.md
-- [ ] Clean up workspace cruft
-- [ ] Archive completed shell orders
-- [ ] Update HEARTBEAT.md
+- [x] Review and compact MEMORY.md (deduplicated API keys, -5.6KB)
+- [x] Clean up workspace cruft
+- [x] Archive completed shell orders
+- [x] Update HEARTBEAT.md
+- COMPLETED: 2026-04-24 07:18 AKDT — memory compact + heartbeat refresh
 
 ## PUSH SCHEDULE
 - Push after each completed task
