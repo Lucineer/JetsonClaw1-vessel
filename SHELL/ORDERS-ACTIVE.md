@@ -87,6 +87,31 @@ Check every repo in the fleet. Ensure none would lose context when a new agent b
 
 ---
 
+## ORDER-006: Continue Edge + Jetson Innovation Work
+**Received:** 2026-04-24 08:47 AKDT
+**From:** Casey
+**Status:** 🔴 IN PROGRESS
+
+### Directive:
+Keep working on edge-related parts of the project and novel innovations on Jetson-type chips.
+
+### Focus Areas:
+- deckboss: TensorRT room inference, production readiness, Jetson-native optimizations
+- CUDA/tensor core: WMMA, fusion kernels, real hardware benchmarks
+- Edge-specific: memory constraints, thermal profiling, ARM64 quirks
+- Novel: anything that only makes sense on edge chips (8GB unified RAM, 1024 CUDA cores, passive cooling)
+
+### Sub-tasks:
+- [ ] Identify next highest-value edge work item
+- [ ] Execute and push
+- [ ] Continue sustained execution
+
+### Notes:
+- Oracle1 handling cloud/fleet comms — I own the metal
+- Three pillars: purplepincher, cocapn, deckboss
+
+---
+
 ## ORDER-005: Cron Job - Fleet Bottle Check
 **Received:** 2026-04-23 17:29 AKDT
 **From:** System (cron job)
