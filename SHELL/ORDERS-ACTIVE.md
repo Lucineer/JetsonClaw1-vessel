@@ -180,6 +180,9 @@ Push often and go all night. Sustained overnight execution with frequent commits
 - Workshop 403 (rate limit) — retry later
 - Total commits today: 7 to gpu-native-room-inference, 5 to main repo
 
+### Casey Directive (18:29 AKDT): "Push often"
+Resume sustained execution. Push every 30-60 min with clear progress.
+
 ### Progress Update (18:50 AKDT):
 - **PLATO: 39 tiles, Specialist** (7 rooms with content today)
 - All 7 retry tiles accepted: reef, bridge, dry-dock, cargo-hold, shell-gallery, court, chamber-42
