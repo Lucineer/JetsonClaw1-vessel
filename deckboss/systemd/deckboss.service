@@ -1,0 +1,38 @@
+[Unit]
+Description=DeckBoss — Jetson Orin Tensor Core Room Inference Engine
+Documentation=https://github.com/Lucineer/deckboss
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lucineer
+Group=lucineer
+ExecStart=/opt/deckboss/bin/deckbossd --config /etc/deckboss/deckboss.conf
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=30
+TimeoutStopSec=10
+
+# Resource limits for 8GB unified RAM Jetson
+MemoryMax=4G
+CPUQuota=200%
+
+# GPU memory watchdog — if GPU mem exceeds 6GB, restart
+# (Handled internally by deckboss health check)
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/deckboss /var/log/deckboss /tmp/deckboss
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=deckboss
+
+[Install]
+WantedBy=multi-user.target
