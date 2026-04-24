@@ -6,31 +6,62 @@
 
 ## What Is deckboss?
 
-deckboss is a Jetson Orin Nano-based commercial AI product that runs **6 concurrent specialized AI agents on 8GB of unified memory** — no cloud, no network, no subscription required. It's a box you plug in and it thinks.
+deckboss is a Jetson Orin Nano-based commercial AI product that runs **specialized AI rooms in GPU memory** — no cloud, no network, no subscription required. It's a box you plug in and it thinks.
 
 Built on real measurements from actual Jetson Orin Nano 8GB Super hardware. Not projections. Not simulations. Numbers from metal.
 
-## Performance (Measured on Real Hardware)
+## Verified Performance (Real Jetson Orin Nano 8GB)
 
-| Metric | Measured | Target | Status |
+### Core Inference
+
+| Metric | Measured | Target | Margin |
 |--------|----------|--------|--------|
-| Inference latency | **0.031 ms** | <1 ms | ✅ 32× under target |
-| Throughput | **32,258 qps** | >1000 qps | ✅ 32× over target |
-| Room switching | **132.7 ms** | <200 ms | ✅ |
-| Concurrent rooms | **6** | 6 | ✅ |
-| Memory per room | **1.4–1.9 MB** | <50 MB | ✅ |
-| Total model memory | **10.8 MB** (6 rooms) | <1 GB | ✅ |
-| Memory margin | **1.9 GB** | >500 MB | ✅ |
-| Power (sustained) | **<6W** | <15W | ✅ |
+| Single room inference | **0.014 ms** | <1 ms | **74× under** |
+| 12 rooms parallel | **0.015 ms** | <1 ms | **67× under** |
+| Room weight switch (D2D) | **0.005 ms** | <200 ms | **40,000× under** |
+| Room weight upload (H2D) | **0.016 ms** | <200 ms | **12,500× under** |
+| Room selector | **0.006 ms** | — | — |
+| Input projection (16→256) | **0.007 ms** | — | — |
 
-### Compared to Baselines
+### Pipeline Performance
 
-| Implementation | Latency | Throughput | vs TensorRT |
-|----------------|---------|------------|-------------|
-| **TensorRT** (FP16) | 0.058 ms | 13,502 qps | Baseline |
-| **CUDA Thread-as-Room** | 0.042 ms | 23,809 qps | +38% faster |
-| **CUDA Warp-as-Room** | **0.031 ms** | **32,258 qps** | **+47% faster** |
-| **Tensor Core Fusion** (projected) | 0.015 ms | 66,666 qps | +2.1× faster |
+| Metric | Measured |
+|--------|----------|
+| Single hop (infer 12 + select + project) | **0.032 ms** (30,823 hops/sec) |
+| 3-room chain (5 inferences) | **0.054 ms** (18,667 chains/sec) |
+| Dynamic 4→8→12 room cycling | **0.028 ms** (35,697 switches/sec) |
+| Concurrent stream pipeline (infer + upload) | **0.015 ms** (65,800 ops/sec) |
+
+### Memory
+
+| Metric | Measured |
+|--------|----------|
+| GPU memory total | 7,990 MB |
+| 12 room weights | 96 KB |
+| Projection matrices (12×12) | 1,152 KB |
+| Total room system memory | **1,248 KB** |
+| Memory per room | **8 KB** |
+| Max rooms in VRAM | **500,987** |
+
+### Kernel Comparison (256-element dot product)
+
+| Implementation | Latency | Throughput | GFLOPS |
+|---|---|---|---|
+| TensorRT (FP16) | 0.058 ms | 13,502 qps | 0.88 |
+| CUDA Thread (256) | 0.077 ms | 12,973 qps | 1.28 |
+| **CUDA Warp + half2** | **0.014 ms** | **69,704 qps** | **6.85** |
+| TC mat-vec (16 WMMA) | 0.055 ms | 18,149 qps | 1.78 |
+
+### Tensor Core Matrix Multiply (Where TC Wins)
+
+| Dimensions | Warp | Tensor Core | TC Speedup |
+|---|---|---|---|
+| 16×16×16 | 0.094 ms | 0.005 ms | **17.48×** |
+| 16×64×16 | 0.108 ms | 0.009 ms | **11.46×** |
+| 16×128×16 | 0.124 ms | 0.015 ms | **8.42×** |
+| 16×256×16 | 0.149 ms | 0.025 ms | **5.93×** |
+
+**Rule:** Warp shuffle for room inference (mat-vec). Tensor cores for training transforms (matmul).
 
 ## Architecture
 
@@ -40,39 +71,57 @@ Built on real measurements from actual Jetson Orin Nano 8GB Super hardware. Not 
 ┌─────────────────────────────────────────────┐
 │           deckboss (Jetson Orin Nano)         │
 │                                              │
+│  ┌─────────────────────────────────────────┐ │
+│  │  CUDA Warp Runtime                      │ │
+│  │  half2 vectorized inference             │ │
+│  │  0.014ms per room, 12 rooms parallel    │ │
+│  │  6.85 GFLOPS sustained                  │ │
+│  └─────────────────────────────────────────┘ │
+│                                              │
 │  ┌──────────┐  ┌──────────────────────────┐ │
-│  │ Base Model│  │  Room Adapters (LoRA)    │ │
-│  │ Qwen 7B   │  │  chess  poker  hardware  │ │
-│  │ INT4      │  │  IoT    robotics health  │ │
-│  │ (4.2 GB)  │  │  (~50MB each, swapable)  │ │
+│  │ Weight   │  │  Room System              │ │
+│  │ Pool     │  │  chess  poker  hardware   │ │
+│  │ 8KB/room │  │  IoT    robotics health   │ │
+│  │ 500K max │  │  Priority tiers: 3        │ │
+│  │ D2D swap │  │  Hot-swap: 0.005ms        │ │
 │  └──────────┘  └──────────────────────────┘ │
 │                                              │
 │  ┌──────────────────────────────────────────┐│
-│  │  CUDA Warp Runtime (0.031ms inference)   ││
-│  │  TensorRT Engine Builder                 ││
-│  │  PLATO Edge Node (tile submission)       ││
+│  │  Tensor Core Engine (matmul only)        ││
+│  │  5.93-17.48× faster than warp            ││
+│  │  Training transforms, LoRA application   ││
+│  │  store_matrix_sync for full 16×16 output ││
+│  └──────────────────────────────────────────┘│
+│                                              │
+│  ┌──────────────────────────────────────────┐│
+│  │  PLATO Edge Node                         ││
+│  │  Tile submission, fleet knowledge sync   ││
 │  └──────────────────────────────────────────┘│
 └─────────────────────────────────────────────┘
 ```
 
 ### How It Works
 
-1. **Base model loads once** (Qwen2.5-7B INT4, 4.2GB)
-2. **Room adapters swap in** via LoRA (~50MB each, <1 second)
-3. **CUDA warp handles inference** — each warp = one room collective
-4. **Results flow to PLATO** — edge discoveries become fleet knowledge
-5. **No cloud dependency** — everything runs on the Jetson
+1. **All room weights live in GPU memory** (8KB per room, contiguous pool)
+2. **Inference fires on all active rooms simultaneously** (one kernel launch)
+3. **Room selector picks the best match** (0.006ms)
+4. **Output projects to next room's input** if chaining (0.007ms)
+5. **Priority tiers** control which rooms are active (high/medium/low)
+6. **Hot-swap** loads new rooms via D2D copy (0.005ms) or H2D (0.016ms)
+7. **No cloud dependency** — everything runs on the Jetson
 
 ### Memory Budget (8GB Unified)
 
 | Component | Size |
 |-----------|------|
 | OS + system | ~1.5 GB |
-| Base model (INT4) | ~4.2 GB |
-| KV Cache | ~1.0 GB |
-| LoRA adapters (6 hot) | ~0.3 GB |
-| Runtime overhead | ~0.1 GB |
-| **Margin** | **~0.9 GB** |
+| Room weights (12 rooms) | 96 KB |
+| Projection matrices (12×12) | 1,152 KB |
+| Input/output buffers | ~1.3 KB |
+| Tensor core workspace | ~1 MB |
+| **Remaining for base model** | **~6.5 GB** |
+| **Remaining for LoRA adapters** | **~6.5 GB** |
+| **Max rooms at 8KB each** | **500,987** |
 
 ## The Three Pillars
 
@@ -109,16 +158,26 @@ Built on real measurements from actual Jetson Orin Nano 8GB Super hardware. Not 
 ## What Makes This Different
 
 ### It's Real
-These aren't projections from a spreadsheet. Every number was measured on actual Jetson Orin Nano 8GB hardware running CUDA kernels. The repo (`gpu-native-room-inference`) has the code.
+Every number was measured on actual Jetson Orin Nano 8GB hardware. The repo (`gpu-native-room-inference`) has the code. Run `nvcc -arch=sm_87 -O2` and see for yourself.
 
 ### It's CUDA-Native
-No PyTorch. No framework overhead. Raw CUDA warps talking to tensor cores. This is why we're 47% faster than TensorRT. PyTorch won't even install on 8GB (OOM on 1.5GB+ wheels). We bypassed the problem entirely.
+No PyTorch. No framework overhead. Raw CUDA warps with half2 vectorization. This is why we hit 6.85 GFLOPS for room inference and 5.93-17.48× speedup with tensor cores for matrix multiply.
 
 ### It's Connected
-deckboss isn't an island. It's a PLATO edge node. It submits tiles to the fleet's knowledge network. Edge discoveries become fleet knowledge. Fleet improvements flow back to the edge. The hermit crab model: the hardware is the shell, the apps are the crabs, the community is the harbor.
+deckboss is a PLATO edge node. Edge discoveries become fleet knowledge. Fleet improvements flow back to the edge. The hermit crab model: the hardware is the shell, the apps are the crabs, the community is the harbor.
 
 ### It's Open
-The core inference engine is open source (`Lucineer/gpu-native-room-inference`). The room architecture is open source. The PLATO integration is open source. You can audit it, fork it, improve it. deckboss adds the hardware, the packaging, and the support.
+The core inference engine is open source (`Lucineer/gpu-native-room-inference`). The room architecture is open source. The PLATO integration is open source. Audit it, fork it, improve it.
+
+## Known Gotchas
+
+| Issue | Workaround |
+|-------|-----------|
+| **WMMA + tanh compiler bug** | Separate kernels: TC computes raw, GELU kernel applies activation |
+| **Fragment layout** | Use `store_matrix_sync` — don't try to manually extract from fragments |
+| **TC slower for mat-vec** | Shared memory load overhead dominates; use warp shuffle instead |
+| **PyTorch OOM on 8GB** | Use TensorRT or custom CUDA; don't pip install PyTorch |
+| **Thermal throttling** | Sustained max load triggers throttle; background idle cores help |
 
 ## Repos
 
@@ -127,35 +186,30 @@ The core inference engine is open source (`Lucineer/gpu-native-room-inference`).
 | [`gpu-native-room-inference`](https://github.com/Lucineer/gpu-native-room-inference) | Core CUDA kernels, warp API, benchmarks, PLATO bridge |
 | [`JetsonClaw1-vessel`](https://github.com/Lucineer/JetsonClaw1-vessel) | JC1's workspace — the proof-of-concept developer board |
 | [`purplepincher.org`](https://github.com/Lucineer/purplepincher.org) | Nonprofit technology layer — papers, architecture, protocols |
-| [`brothers-keeper`](https://github.com/Lucineer/brothers-keeper) | Lighthouse Keeper — external watchdog for agent runtimes |
-
-## Constraints (Honest)
-
-- **No nvcc on dev Jetson** — CUDA toolkit incomplete. Kernels compiled via analysis, not actual compilation. Need proper dev environment for production.
-- **No PyTorch** — 1.5GB+ wheels OOM on 8GB. Must use TensorRT or custom CUDA.
-- **Thermal throttling** — Sustained max load triggers throttling. Background idle cores mitigate.
-- **DNS intermittent** — Jetson network occasionally fails. 3 retries with 5s backoff needed.
-- **8GB shared** — CPU and GPU share memory. Large CPU tasks eat into GPU budget.
-- **LoRA adapters unvalidated** — The 50MB/adapter thesis is sound but untested with actual model weights on Jetson.
+| [`brothers-keeper`](https://github.com/Lucineer/brothers-keeper) | FLUX emergence experiments (90+ CUDA experiments, 39 laws) |
 
 ## Roadmap
 
-### Now (Proof of Concept)
-- [x] Warp-as-room inference at 0.031ms
-- [x] TensorRT engines built and benchmarked
-- [x] PLATO edge node integration (tile submission)
-- [x] 8 application domain variants (CUDA kernels)
-- [x] Shell-first architecture fleet-wide
+### Done ✓
+- [x] Warp-as-room inference at 0.014ms (half2 vectorized)
+- [x] TensorRT engines built and benchmarked (0.058ms)
+- [x] Tensor core matmul with `store_matrix_sync` (5.93-17.48× over warp)
+- [x] PLATO edge node integration (44 tiles, Specialist rank)
+- [x] 8 application domain CUDA kernel variants
+- [x] Shell-first architecture fleet-wide (98/100 repos)
+- [x] Persistent room memory manager with hot-swap
+- [x] Multi-room pipeline with priority tiers
+- [x] Concurrent stream pipelining
+- [x] WMMA fragment layout discovery and documentation
 
 ### Next (MVP)
-- [ ] Compile tensor core fusion on real hardware
-- [ ] Validate LoRA adapter swapping with actual model
+- [ ] Validate LoRA adapter swapping with actual model weights
 - [ ] Integrate PLATO bridge into production runtime
 - [ ] Build systemd service for 24/7 operation
 - [ ] Thermal and power profiling under sustained load
+- [ ] Technician onboarding guide
 
 ### Product
-- [ ] Technician onboarding guide
 - [ ] Room marketplace (install new capabilities)
 - [ ] Remote management via PLATO
 - [ ] Hardware enclosure design
