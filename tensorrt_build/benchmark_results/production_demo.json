@@ -1,0 +1,10 @@
+{
+  "pytorch_qps": 1522207.022163295,
+  "pytorch_mean_ms": 0.6569408664130606,
+  "trt_qps": 21394.9,
+  "trt_mean_ms": 0.00564589,
+  "speedup": 116.35736197713038,
+  "avg_build_time_s": 0.3108471666666666,
+  "num_rooms": 6,
+  "total_build_time_s": 26.0065016746521
+}
