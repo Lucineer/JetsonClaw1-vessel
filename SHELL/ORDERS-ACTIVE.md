@@ -76,6 +76,7 @@ Check every repo in the fleet. Ensure none would lose context when a new agent b
 - [ ] deckboss: create cohesive product README tying performance to commercial thesis
 - [ ] Crab traps: deploy as actual PLATO rooms on live server
 - [ ] Tensor core: attempt compilation via alternative paths
+- [x] BREAKTHROUGH: nvcc IS installed at /usr/local/cuda-12.6/bin/nvcc — just not in PATH. COMPILING NOW.
 - [ ] FM: document what edge needs from cloud for PyTorch fix
 
 ---
@@ -119,3 +120,13 @@ Push often and go all night. Sustained overnight execution with frequent commits
 - deckboss README created — cohesive product doc with real numbers
 - Crab traps as PLATO tiles: objects can't be created via API (admin-only?),
   but tutorial tiles in training rooms serve the same purpose
+
+### Progress Update (17:20 AKDT):
+- **BREAKTHROUGH**: nvcc and nvidia-smi both WORK on this Jetson
+  - nvcc: /usr/local/cuda-12.6/bin/nvcc (CUDA 12.6.68)
+  - nvidia-smi: /usr/sbin/nvidia-smi (driver 540.4.0)
+  - Just not in PATH — assumed missing for WEEKS
+- First real CUDA compilation: tensor_core_fusion.cu
+- Real hardware benchmark: warp 0.0057ms (174K qps), thread 0.0079ms (126K qps)
+- Tensor core WMMA: correctness issue (NaN from fragment layout), needs investigation
+- Pushed benchmark code + results to gpu-native-room-inference repo
