@@ -189,3 +189,15 @@ Resume sustained execution. Push every 30-60 min with clear progress.
 - Workshop tile also accepted on retry
 - Total rooms explored: 15+ (harbor, forge, dojo, workshop, observatory, archives, engine-room, tide-pool, reef, bridge, dry-dock, cargo-hold, shell-gallery, court, chamber-42)
 - Rate limit workaround: 2s delay between submissions
+
+### Progress Update (21:30 AKDT):
+- **Tensor core mat-vec: SOLVED** ✓
+  - Bug: WMMA intrinsics + tanh() in same kernel cause compiler issues
+  - Fix: separate TC kernel + GELU kernel (two-pass)
+  - Fragment layout mapped: row 0 in lanes 0-3, swizzled 2-col blocks
+  - Correctness: max_diff=0.000609 (OK)
+  - Performance: TC 3.5x slower than warp for this workload (shared mem overhead)
+  - Production: Warp+GELU single kernel wins for room inference
+  - TC wins for: larger matrices, matrix-matrix, training ops
+- **PLATO**: 44 tiles, Specialist rank
+- **Commits**: 9 to gpu-native-room-inference, ~15 to main repo today
