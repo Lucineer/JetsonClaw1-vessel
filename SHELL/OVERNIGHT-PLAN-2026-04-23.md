@@ -29,26 +29,29 @@
 - [ ] Target: Expert rank by morning
 
 ### P3: systemd Service Skeleton
-- [ ] Write deckboss.service for 24/7 operation
-- [ ] Health check endpoint
-- [ ] Auto-restart on crash
-- [ ] GPU memory watchdog
-- [ ] Log rotation
+- [x] Write deckboss.service for 24/7 operation
+- [x] Health check endpoint
+- [x] Auto-restart on crash
+- [x] GPU memory watchdog
+- [x] Log rotation
 - File: `deckboss/systemd/deckboss.service`
+- COMPLETED: 2026-04-23 23:25 AKDT — service + healthcheck + README
 
 ### P4: Production Runtime Skeleton
-- [ ] C API: `deckboss_init()`, `deckboss_infer()`, `deckboss_switch_room()`
-- [ ] Header file with documented interface
-- [ ] Example usage program
-- [ ] Error handling patterns
+- [x] C API: `deckboss_init()`, `deckboss_infer()`, `deckboss_switch_room()`
+- [x] Header file with documented interface
+- [x] Example usage program
+- [x] Error handling patterns
 - File: `deckboss/runtime/`
+- COMPLETED: 2026-04-23 23:28 AKDT — full C API header + example
 
 ### P5: Technician Onboarding Guide (draft)
-- [ ] First 5 minutes with deckboss
-- [ ] Installing your first room
-- [ ] Running inference
-- [ ] Connecting to PLATO fleet
+- [x] First 5 minutes with deckboss
+- [x] Installing your first room
+- [x] Running inference
+- [x] Connecting to PLATO fleet
 - File: `deckboss/docs/QUICKSTART.md`
+- COMPLETED: 2026-04-23 23:30 AKDT — full quickstart guide
 
 ### P6: Memory / Cleanup
 - [ ] Review and compact MEMORY.md
