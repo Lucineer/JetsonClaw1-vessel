@@ -1,0 +1,10 @@
+{
+  "architecture": "weight-swapping",
+  "hot_swap_time_us": 10,
+  "inference_time_us": 5,
+  "total_per_room_us": 15,
+  "qps_weight_swap": 66000,
+  "qps_cache_hit": 200000,
+  "speedup_over_rebuild": 20600,
+  "practical_room_limit": 2000
+}
