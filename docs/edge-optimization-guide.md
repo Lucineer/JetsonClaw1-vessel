@@ -19,6 +19,7 @@
 | Weight switching | CUDA memcpy (1μs) | Engine rebuild (300ms) |
 | Engine building | On-device (0.3-1.5s) | Cross-compile from cloud |
 | Cooling | Passive is fine | Worry about 48-49°C |
+| Stream priority | Don't bother | Negligible effect on Orin |
 
 ---
 
