@@ -162,3 +162,13 @@ Push often and go all night. Sustained overnight execution with frequent commits
 - Real hardware benchmark: warp 0.0057ms (174K qps), thread 0.0079ms (126K qps)
 - Tensor core WMMA: correctness issue (NaN from fragment layout), needs investigation
 - Pushed benchmark code + results to gpu-native-room-inference repo
+
+### Progress Update (18:15 AKDT):
+- **Tensor core WMMA: SOLVED** ✓
+  - Bug: only loaded first 16 input elements across all chunks
+  - Fix: load both input and weights per chunk
+  - cf.x[0] on lane 0 = exact 16-element dot product (verified)
+  - Results: tc 0.0076ms, warp 0.0060ms — warp wins for dot product (expected)
+  - All 5 debug tests passed with exact results
+- **PLATO**: 23 tiles, Sailor rank, 15 rooms explored (engine-room new)
+- **3 more tiles**: WMMA API reference, warp vs TC analysis, engine-room discovery
