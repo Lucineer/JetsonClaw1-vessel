@@ -1,0 +1,15 @@
+{
+  "build_time_sec": 1.47903,
+  "build_peak_mem_mib": 1455.0,
+  "throughput_qps": 13127.0,
+  "latency_min_ms": 0.0776367,
+  "latency_mean_ms": 0.0879473,
+  "latency_median_ms": 0.0860596,
+  "latency_p90_ms": 0.0947266,
+  "latency_p99_ms": 0.109375,
+  "gpu_compute_mean_ms": 0.0748994,
+  "enqueue_mean_ms": 0.0419914,
+  "name": "attention_room_256",
+  "total_wall_sec": 7.361465215682983,
+  "engine_size_mb": 3.082530975341797
+}

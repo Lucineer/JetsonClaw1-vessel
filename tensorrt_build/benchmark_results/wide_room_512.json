@@ -1,0 +1,15 @@
+{
+  "build_time_sec": 0.330497,
+  "build_peak_mem_mib": 1455.0,
+  "throughput_qps": 21289.5,
+  "latency_min_ms": 0.0360718,
+  "latency_mean_ms": 0.0436346,
+  "latency_median_ms": 0.0415039,
+  "latency_p90_ms": 0.0517731,
+  "latency_p99_ms": 0.0614319,
+  "gpu_compute_mean_ms": 0.032677,
+  "enqueue_mean_ms": 0.0170026,
+  "name": "wide_room_512",
+  "total_wall_sec": 6.207801342010498,
+  "engine_size_mb": 1.0228004455566406
+}

@@ -1,0 +1,15 @@
+{
+  "build_time_sec": 0.45514,
+  "build_peak_mem_mib": 1455.0,
+  "throughput_qps": 19615.4,
+  "latency_min_ms": 0.0385742,
+  "latency_mean_ms": 0.0469056,
+  "latency_median_ms": 0.0452881,
+  "latency_p90_ms": 0.0549927,
+  "latency_p99_ms": 0.0643311,
+  "gpu_compute_mean_ms": 0.0361029,
+  "enqueue_mean_ms": 0.0204344,
+  "name": "deep_room_256",
+  "total_wall_sec": 6.374708890914917,
+  "engine_size_mb": 0.5305976867675781
+}

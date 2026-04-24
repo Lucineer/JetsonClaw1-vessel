@@ -1,0 +1,15 @@
+{
+  "build_time_sec": 0.307326,
+  "build_peak_mem_mib": 1455.0,
+  "throughput_qps": 21487.4,
+  "latency_min_ms": 0.0324707,
+  "latency_mean_ms": 0.040157,
+  "latency_median_ms": 0.0384521,
+  "latency_p90_ms": 0.0473022,
+  "latency_p99_ms": 0.0510254,
+  "gpu_compute_mean_ms": 0.0280256,
+  "enqueue_mean_ms": 0.0166712,
+  "name": "small_room_128",
+  "total_wall_sec": 6.291518211364746,
+  "engine_size_mb": 0.08198928833007812
+}

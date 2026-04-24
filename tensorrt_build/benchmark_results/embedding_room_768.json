@@ -1,0 +1,15 @@
+{
+  "build_time_sec": 0.327325,
+  "build_peak_mem_mib": 1455.0,
+  "throughput_qps": 21689.3,
+  "latency_min_ms": 0.0437012,
+  "latency_mean_ms": 0.048813,
+  "latency_median_ms": 0.046875,
+  "latency_p90_ms": 0.0560303,
+  "latency_p99_ms": 0.0721741,
+  "gpu_compute_mean_ms": 0.0404785,
+  "enqueue_mean_ms": 0.0166891,
+  "name": "embedding_room_768",
+  "total_wall_sec": 6.189639329910278,
+  "engine_size_mb": 2.2747535705566406
+}
