@@ -12,11 +12,12 @@
 ## PRIORITY QUEUE
 
 ### P1: Thermal & Power Profiling (NEW — real product data)
-- [ ] Sustained load test: run room inference at max for 60+ seconds
-- [ ] Monitor nvidia-smi power/temp over time
-- [ ] Find thermal throttle point
-- [ ] Determine sustainable GFLOPS (not burst)
-- [ ] Document power budget for product spec
+- [x] Sustained load test: run room inference at max for 60+ seconds
+- [x] Monitor nvidia-smi power/temp over time
+- [x] Find thermal throttle point (NO throttling — 48-49°C sustained)
+- [x] Determine sustainable GFLOPS (not burst)
+- [x] Document power budget for product spec
+- COMPLETED: 2026-04-23 23:19 AKDT — GPU stays 48°C, 50°C headroom to junction max
 - File: `/tmp/tensor-core-build/thermal_profile.cu`
 
 ### P2: PLATO Rank Climbing (Specialist → Expert)
