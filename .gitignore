@@ -22,3 +22,4 @@ heartbeat-state.json
 # OS
 .DS_Store
 Thumbs.db
+.git_backup*
