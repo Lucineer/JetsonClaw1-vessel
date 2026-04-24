@@ -87,6 +87,32 @@ Check every repo in the fleet. Ensure none would lose context when a new agent b
 
 ---
 
+## ORDER-005: Cron Job - Fleet Bottle Check
+**Received:** 2026-04-23 17:29 AKDT
+**From:** System (cron job)
+**Status:** 🟢 COMPLETE
+
+### Directive:
+Check for new bottles from Forgemaster: run 'cd /tmp/forgemaster && git pull && git log --since='20 minutes ago' --oneline'. If new commits found, read the files and report findings. Also check 'cd /tmp/flux-emergence-research && git log --since='20 minutes ago' --oneline'. Report anything new.
+
+### Sub-tasks:
+- [x] Check forgemaster for new bottles (last 20 minutes)
+- [x] Check flux-emergence-research for new commits (last 20 minutes)
+- [x] Read new files if commits found
+- [x] Report findings
+
+### Notes:
+- Current time: 17:29 AKDT (2026-04-24 01:29 UTC)
+
+### Findings:
+- **Forgemaster**: No new commits in last 20 minutes. Already up to date.
+- **flux-emergence-research**: No new commits in last 20 minutes. Already up to date.
+- **Bottles to JC1**: None found in for-fleet/ directory
+- **Bottles from JC1**: Multiple existing bottles (most recent 2026-04-20), plus one untracked file
+- Both repositories are healthy and up to date
+
+---
+
 ## ORDER-002: Push Often and Go All Night
 **Received:** 2026-04-22 21:47 AKDT
 **From:** Casey
