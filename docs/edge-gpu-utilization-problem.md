@@ -259,7 +259,83 @@ For deckboss, this means a single Jetson can serve an entire fleet's room infere
 
 ---
 
+## 6. Optimization Conflict: CUDA Graphs vs Streams
+
+A novel finding: **CUDA Graphs and CUDA Streams should never be used together.**
+
+| Configuration | Room QPS | vs Baseline |
+|---|---|---|
+| Baseline (no optimization) | 759,266 | 1.00× |
+| 4 CUDA Streams | 1,706,930 | 2.25× |
+| CUDA Graphs | 1,006,465 | 1.33× |
+| **CUDA Graphs + 4 Streams** | **668,191** | **0.88×** |
+
+Combined, they are **slower than doing nothing.** The reason: CUDA Graphs serialize execution into a deterministic replay graph, while Streams introduce async parallelism. The graph captures stream synchronization barriers, creating serialization points that defeat both optimizations.
+
+**Rule:** Use streams for throughput (2.25×). Use graphs for single-call latency (1.33×). Never combine them.
+
+## 7. Memory Bandwidth Saturation
+
+### Raw Bandwidth
+Memcpy benchmarks show the Jetson Orin Nano achieves **25-44 GB/s** of the theoretical 68.3 GB/s (LPDDR5 128-bit). The Orin never reaches its theoretical peak — 37-65% efficiency is the practical ceiling.
+
+### Room Inference Bandwidth
+For room inference with random access patterns:
+- 256-dim rooms: 12.3 GB/s (18% of peak)
+- 1024-dim rooms: 39.9 GB/s (58% of peak)
+
+Random access to weight matrices is the bandwidth killer. Sequential memcpy can saturate, but scattered reads cannot.
+
+### Shared Memory Doesn't Help
+A shared-memory optimized kernel (loading input into shared memory) was **1.1× slower** than the global-memory version. The `__syncthreads()` overhead exceeds the cache benefit at room inference sizes (64-1024 elements).
+
+### The Launch Overhead Floor
+| Batch Size | us/room | Room QPS | Bottleneck |
+|---|---|---|---|
+| 1 | 4.384 | 228,122 | Launch overhead |
+| 64 | 0.086 | 11,685,162 | Transition zone |
+| 256 | 0.029 | 34,671,620 | Memory bandwidth |
+| 1024 | 0.017 | 60,031,076 | Memory bandwidth |
+
+The crossover from launch-bound to memory-bound occurs at **~64 rooms per batch**. Below that, optimizing the kernel is pointless — the GPU is idle waiting for launch. Above that, memory bandwidth becomes the ceiling.
+
+### Theoretical Floor
+For 256-dim rooms: 1024 bytes read per room. At 44 GB/s practical bandwidth: **0.015 μs/room**. Our best measured: **0.017 μs/room** at 1024-room batches. We're within 13% of the theoretical minimum. The GPU is nearly saturated.
+
+## 8. Complete Performance Summary
+
+### Production Configuration (6 rooms, 4 streams)
+- **1.7M room-qps** | 3.5 μs per inference | 0.586 μs per room
+
+### Fleet Configuration (64 rooms, 4 streams)
+- **17.5M room-qps** | 0.057 μs per room
+
+### Maximum Throughput (4096 rooms, 4 streams)
+- **80.6M room-qps** | 0.012 μs per room
+
+### Key Ratios
+| Comparison | Ratio |
+|---|---|
+| Raw CUDA vs TensorRT | 100× |
+| cuBLAS vs naive TC GEMM | 19× |
+| Weight swap vs engine rebuild | 31,000× |
+| 4 streams vs baseline | 2.25× |
+| Batch 1024 vs single room | 263× |
+
+---
+
 ## Appendix: Benchmark Code
+
+All benchmarks are in the `gpu-native-room-inference` and `tensorrt_build` repositories:
+- `benchmarks/real_hardware/gemm_benchmark_v2.cu` — TC vs cuBLAS
+- `benchmarks/real_hardware/cuda_graphs_bench.cu` — CUDA Graphs
+- `benchmarks/real_hardware/prefetch_dispatch.cu` — Stream benchmarks
+- `benchmarks/real_hardware/ultimate_bench.cu` — All optimizations combined
+- `benchmarks/real_hardware/mem_bandwidth.cu` — Memory bandwidth analysis
+- `tensorrt_build/trt_benchmark_suite.py` — TRT room benchmarks
+- `tensorrt_build/batch_benchmark.py` — Multi-room batching
+- `tensorrt_build/production_demo.py` — End-to-end demo
+- `tensorrt_build/weight_swap_architecture.py` — Weight-swap analysis
 
 All benchmarks are in the `gpu-native-room-inference` and `tensorrt_build` repositories:
 - `benchmarks/real_hardware/gemm_benchmark_v2.cu` — TC vs cuBLAS
