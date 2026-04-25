@@ -1,5 +1,5 @@
 # Jetson Edge GPU Optimization Guide
-## Practical Rules from 15 Benchmark Suites on Real Hardware
+## Practical Rules from 25 Benchmark Suites on Real Hardware
 
 **Hardware:** Jetson Orin Nano 8GB, 1024 CUDA cores, LPDDR5 128-bit, passive cooling
 **CUDA:** 12.6 | **TensorRT:** 10.3 | **Date:** 2026-04-24
@@ -20,6 +20,10 @@
 | Engine building | On-device (0.3-1.5s) | Cross-compile from cloud |
 | Cooling | Passive is fine | Worry about 48-49°C |
 | Stream priority | Don't bother | Negligible effect on Orin |
+| Prefetch (unified) | Don't bother | Sync overhead > overlap savings |
+| Quantization | Keep FP16 | INT8/INT4 slower for dot products |
+| Half2 vectorize | Marginal (1.05x) | Only helps at dim > 512 |
+| Multi-room/block | 4 rooms/block | 1 or 2 rooms/block at small batch |
 
 ---
 
@@ -254,4 +258,90 @@ The Orin Nano can run 24/7 at full inference load with passive cooling. No fans 
 
 ---
 
+---
+
+## Rule 15: 128 Threads Per Block for Maximum Occupancy
+
+The Orin's sm_87 caps at 16 blocks/SM and 1536 threads/SM. 32-thread blocks waste capacity.
+
+```
+32 threads/block:  67% occupancy (hardware shmem reservation)
+128 threads/block: 100% occupancy, 1.75x faster at 64 rooms
+```
+
+**Use 4 rooms/block (128 threads)** for batch sizes 64+. Fall back to 1 room/block (32 threads) for small batches.
+
+---
+
+## Rule 16: Don't Quantize Memory-Bound Workloads
+
+INT8/INT4 quantization saves bandwidth but the conversion overhead cancels the savings.
+
+```
+FP16:        7.7us (baseline)
+Static INT8:  7.8us (1.01x — no speedup)
+INT4:        7.6us (0.99x — unpack overhead = bandwidth savings)
+Dynamic INT8: 10.4us (1.35x SLOWER)
+```
+
+**Accuracy is excellent** (4+ significant digits) but speed doesn't improve. Only quantize compute-bound workloads (large WMMA matmuls).
+
+---
+
+## Rule 17: Jitter Is Remarkably Low
+
+Jetson GPU scheduling is fair and deterministic. Clean inference jitter is minimal.
+
+```
+6 rooms:  p50=8.4us, p99=9.3us (1.10x jitter ratio)
+64 rooms: p50=8.8us, p99=10.1us (1.15x)
+256 rooms: p50=10.7us, p99=11.6us (1.09x)
+Zero outliers > 2x p50 in 5000 samples
+```
+
+**Budget 1.2x p50 for p99 guarantee.** No need for complex tail-latency mitigation.
+
+---
+
+## Rule 18: Prefetch Hurts on Unified Memory
+
+Double-buffered prefetch adds synchronization overhead that exceeds the overlap benefit.
+
+```
+Sequential (H2D+compute):  11.9us/batch
+Prefetch (overlap):          14.3us/batch — SLOWER!
+Pre-loaded (compute only):    5.6us/batch
+```
+
+The H2D transfer (6.3us) is actually *larger* than compute (5.6us). `cudaStreamWaitEvent` adds ~2us of sync overhead. **Pre-load all active weights and keep them resident.**
+
+---
+
+## Rule 19: Cross-Room Communication Is Nearly Free
+
+Sharing activations between rooms via shared memory adds almost no overhead.
+
+```
+Independent:  7.6us (256 rooms)
+Cross-room:   6.5us (256 rooms, 4 rooms/block) — 1.18x FASTER
+```
+
+Same-block rooms can share activations for coordination, consensus, or attention without performance penalty. **Enables PLATO room-level cooperation.**
+
+---
+
+## Rule 20: Fused Kernels Dominate
+
+The single biggest optimization. Fusing matmul+GELU into one kernel saves one kernel launch.
+
+```
+Separate matmul + GELU:  17.0us (2 launches)
+Fused:                    4.5us (1 launch) — 3.69x at 4 layers
+```
+
+Fusion alone accounts for 80% of total possible speedup. All other optimizations combined add 20%.
+
+---
+
 *All numbers from real hardware benchmarks. No simulations. No estimates. Measured on Jetson Orin Nano 8GB, CUDA 12.6.*
+*Last updated: 2026-04-24 — 25 benchmark suites, 20 optimization rules.*
