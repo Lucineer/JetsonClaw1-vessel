@@ -1,5 +1,5 @@
 # Jetson Edge GPU Optimization Guide
-## Practical Rules from 14 Benchmark Suites on Real Hardware
+## Practical Rules from 13 Benchmark Suites on Real Hardware
 
 **Hardware:** Jetson Orin Nano 8GB, 1024 CUDA cores, LPDDR5 128-bit, passive cooling
 **CUDA:** 12.6 | **TensorRT:** 10.3 | **Date:** 2026-04-24
@@ -15,7 +15,7 @@
 | CUDA Graphs | For single-call latency | Combine with streams |
 | cuBLAS | Use for GEMM | Write custom TC kernels |
 | TRT | For complex models | For simple dot products |
-| Shared memory | For large reusable data | For small per-call loads |
+| Shared memory | ≤6 rooms or ≥256 batch | 32-128 rooms per batch |
 | Weight switching | CUDA memcpy (1μs) | Engine rebuild (300ms) |
 | Engine building | On-device (0.3-1.5s) | Cross-compile from cloud |
 | Cooling | Passive is fine | Worry about 48-49°C |
@@ -143,24 +143,25 @@ Engine rebuild (different arch):  310,000 μs
 
 ---
 
-## Rule 7: Shared Memory Has Hidden Costs
+## Rule 7: Shared Memory Is Context-Dependent
 
-`__syncthreads()` synchronization can outweigh cache benefits for small workloads.
+Shared memory's value depends on batch size. At small batches (GPU launch-bound), it helps. At large batches (memory-bound), it hurts.
 
 ```
-Global memory kernel:   0.086 μs/room
-Shared memory kernel:   0.091 μs/room (6% slower)
+6 rooms:    shmem = 1.35x faster (launch-bound, preloading helps)
+32 rooms:   shmem = 0.90x slower (sync overhead dominates)
+256 rooms:  shmem+vec (2 rooms/block) = 1.18x faster (crossover)
 ```
 
 **Use shared memory when:**
-- Data is reused across multiple thread blocks
-- Data size > 16 KB (worth the sync cost)
-- Multiple reads per element
+- Batch size ≤ 6 rooms (preloading hides launch latency)
+- Batch size ≥ 256 rooms with multi-room-per-block (occupancy gain)
 
 **Skip shared memory when:**
-- One read per element (like room inference)
-- Data size < 4 KB
-- Only one thread block uses the data
+- Batch size 32-128 rooms (sync cost > benefit)
+- Using single-room-per-block at any size (except ≤ 6)
+
+**Best config at 256+:** 2 rooms per block + vectorized half2 loads = 1.18×
 
 ---
 
