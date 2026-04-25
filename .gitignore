@@ -24,3 +24,4 @@ heartbeat-state.json
 Thumbs.db
 .git_backup*
 craftmind-discgolf/
+.baton/generations/
