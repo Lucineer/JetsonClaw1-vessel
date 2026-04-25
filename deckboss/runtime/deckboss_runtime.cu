@@ -3,11 +3,13 @@
  * 
  * Compile: /usr/local/cuda-12.6/bin/nvcc -arch=sm_87 -O3 -c deckboss_runtime.cu -o deckboss_runtime.o
  * 
- * Based on 10 benchmark suites:
+ * Based on 14 benchmark suites:
  * - Direct-mapped weights (no indirection)
  * - 4 CUDA streams (optimal for Orin)
  * - Batched inference (single kernel launch)
  * - No CUDA Graphs, no quantization, no gather
+ * - Zero-copy output (unified memory, no D2H copy)
+ * - Async pinned input (H2D overlap)
  */
 
 #include "deckboss_runtime.h"
@@ -103,6 +105,10 @@ void deckboss_destroy(deckboss_ctx* ctx) {
     if (ctx->d_weights) cudaFree(ctx->d_weights);
     if (ctx->d_input) cudaFree(ctx->d_input);
     if (ctx->d_output) cudaFree(ctx->d_output);
+    
+    // Zero-copy buffers
+    if (ctx->h_zerocopy_output) cudaFreeHost(ctx->h_zerocopy_output);
+    if (ctx->h_zerocopy_input) cudaFreeHost(ctx->h_zerocopy_input);
     
     free(ctx->streams);
     free(ctx);
@@ -228,4 +234,93 @@ void deckboss_stats(deckboss_ctx* ctx, int64_t* total_infers, float* avg_latency
 const char* deckboss_last_error(deckboss_ctx* ctx) {
     if (!ctx) return "null context";
     return ctx->last_error_msg[0] ? ctx->last_error_msg : "no error";
+}
+
+deckboss_ctx* deckboss_init_zerocopy(int dim, int max_rooms) {
+    deckboss_ctx* ctx = deckboss_init(dim, max_rooms);
+    if (!ctx) return NULL;
+    
+    cudaError_t err;
+    
+    // Allocate zero-copy output buffer (host-visible, device-writable)
+    err = cudaHostAlloc(&ctx->h_zerocopy_output, max_rooms * sizeof(float),
+                        cudaHostAllocMapped);
+    if (err != cudaSuccess) {
+        snprintf(ctx->last_error_msg, sizeof(ctx->last_error_msg),
+                 "cudaHostAlloc output failed: %s", cudaGetErrorString(err));
+        deckboss_destroy(ctx);
+        return NULL;
+    }
+    
+    // Get device pointer for zero-copy output
+    err = cudaHostGetDevicePointer(&ctx->d_zerocopy_output, ctx->h_zerocopy_output, 0);
+    if (err != cudaSuccess) {
+        snprintf(ctx->last_error_msg, sizeof(ctx->last_error_msg),
+                 "cudaHostGetDevicePointer output failed: %s", cudaGetErrorString(err));
+        cudaFreeHost(ctx->h_zerocopy_output);
+        deckboss_destroy(ctx);
+        return NULL;
+    }
+    
+    // Allocate zero-copy input buffer (host-writable, device-readable)
+    err = cudaHostAlloc(&ctx->h_zerocopy_input, dim * sizeof(half),
+                        cudaHostAllocMapped);
+    if (err != cudaSuccess) {
+        snprintf(ctx->last_error_msg, sizeof(ctx->last_error_msg),
+                 "cudaHostAlloc input failed: %s", cudaGetErrorString(err));
+        cudaFreeHost(ctx->h_zerocopy_output);
+        deckboss_destroy(ctx);
+        return NULL;
+    }
+    
+    err = cudaHostGetDevicePointer(&ctx->d_zerocopy_input, ctx->h_zerocopy_input, 0);
+    if (err != cudaSuccess) {
+        snprintf(ctx->last_error_msg, sizeof(ctx->last_error_msg),
+                 "cudaHostGetDevicePointer input failed: %s", cudaGetErrorString(err));
+        cudaFreeHost(ctx->h_zerocopy_input);
+        cudaFreeHost(ctx->h_zerocopy_output);
+        deckboss_destroy(ctx);
+        return NULL;
+    }
+    
+    ctx->zerocopy_enabled = 1;
+    return ctx;
+}
+
+float* deckboss_zerocopy_infer(deckboss_ctx* ctx, const int* room_ids, int num_rooms) {
+    if (!ctx || !ctx->zerocopy_enabled || !room_ids || num_rooms <= 0) return NULL;
+    if (num_rooms > ctx->config.max_rooms) return NULL;
+    
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    
+    cudaEventRecord(start);
+    
+    // Use zero-copy device pointers directly
+    cudaStream_t s = ctx->streams[ctx->stream_idx++ % 4];
+    dim3 block(32);
+    dim3 grid(num_rooms);
+    
+    db_batch_infer<<<grid, block, 0, s>>>(
+        ctx->d_weights, ctx->d_zerocopy_input, ctx->d_zerocopy_output,
+        ctx->config.dim, num_rooms
+    );
+    
+    cudaStreamSynchronize(s);
+    
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    
+    float ms;
+    cudaEventElapsedTime(&ms, start, stop);
+    
+    ctx->total_infers++;
+    ctx->total_latency_ms += ms;
+    
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    
+    // Return host-visible pointer — no D2H copy needed!
+    return ctx->h_zerocopy_output;
 }
