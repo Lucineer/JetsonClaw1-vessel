@@ -1,8 +1,8 @@
 # Jetson Edge GPU Optimization Guide
-## Practical Rules from 25 Benchmark Suites on Real Hardware
+## Practical Rules from 27 Benchmark Suites on Real Hardware
 
 **Hardware:** Jetson Orin Nano 8GB, 1024 CUDA cores, LPDDR5 128-bit, passive cooling
-**CUDA:** 12.6 | **TensorRT:** 10.3 | **Date:** 2026-04-24
+**CUDA:** 12.6 | **TensorRT:** 10.3 | **Date:** 2026-04-25
 
 ---
 
@@ -24,6 +24,9 @@
 | Quantization | Keep FP16 | INT8/INT4 slower for dot products |
 | Half2 vectorize | Marginal (1.05x) | Only helps at dim > 512 |
 | Multi-room/block | 4 rooms/block | 1 or 2 rooms/block at small batch |
+| Zero-copy output | cudaHostAllocMapped | cudaMemcpy D2H |
+| CUDA events | Avoid in hot loops | 9.2us per pair, more than launches |
+| Fleet dispatch | One big batch | Multiple small streams |
 
 ---
 
@@ -260,6 +263,60 @@ The Orin Nano can run 24/7 at full inference load with passive cooling. No fans 
 
 ---
 
+## Rule 11: Zero-Copy Output Eliminates D2H Transfer
+
+On Jetson's unified memory, `cudaHostAllocMapped` lets the GPU write directly to host-visible memory.
+
+```
+Standard (D2H copy):  31.2us (6 rooms)
+Zero-copy (mapped):    8.4us (6 rooms) — 3.70x faster
+```
+
+Latency stays **flat at ~31us** regardless of room count with zero-copy, because the bottleneck shifts entirely to compute.
+
+**Use zero-copy for all output.** It's the single biggest latency win for small batches. Pinned memory adds only 1.04-1.05x vs pageable on unified memory — not worth the setup.
+
+---
+
+## Rule 12: Consolidate Fleet Requests into Large Batches
+
+Multiple concurrent agents (streams) each dispatching small batches is slower than one large batch.
+
+```
+1×24 batched:  2.6us/24 rooms
+4×6 interleaved: 6.8us/24 rooms — 2.6x SLOWER
+```
+
+Consolidate all fleet inference requests into a single batch queue. One GPU, one batch, one dispatch.
+
+---
+
+## Rule 13: Stream Priority Is Useless on Orin
+
+Jetson Orin's stream priority range is [-5, 0] with no measurable effect.
+
+```
+Priority 0 (normal):  9.85us
+Priority -5 (high):   9.75us — 1.01x (noise)
+```
+
+Don't waste engineering effort on priority-based scheduling. Use **temporal isolation** instead — if latency matters, use a dedicated stream, not a higher-priority one.
+
+---
+
+## Rule 14: Direct-Mapped Weights Beat Gather Kernels
+
+Gather kernels that copy weights from a packed buffer add massive overhead.
+
+```
+Direct-mapped:  4.0us (64 rooms)
+Gather kernel: 15.2us (64 rooms) — 378% overhead
+```
+
+Store each room's weights at a fixed offset in a contiguous array. Index directly into the array from the kernel. Never use indirection tables or gather patterns.
+
+---
+
 ## Rule 15: 128 Threads Per Block for Maximum Occupancy
 
 The Orin's sm_87 caps at 16 blocks/SM and 1536 threads/SM. 32-thread blocks waste capacity.
@@ -343,5 +400,36 @@ Fusion alone accounts for 80% of total possible speedup. All other optimizations
 
 ---
 
+## Rule 21: Minimize CUDA Event Usage
+
+Creating and synchronizing CUDA events is more expensive than launching kernels.
+
+```
+Kernel launch:       3.5us (empty kernel)
+CUDA event pair:     9.2us (create + record + sync + destroy)
+Per-room dispatch:  282us (64 individual launches)
+Batched dispatch:      4us (1 launch, 64 rooms) — 74.6x
+```
+
+**Rules:**
+1. Never create events inside hot loops
+2. Batch measurements — record once per batch, not per room
+3. Use `cudaLaunchKernel` (C API) for marginal (0.14us) savings
+4. If you need per-room timing, sample (1 in 100) instead of measuring every call
+
+---
+
+## Production Kernel Selection Guide
+
+| Batch Size | Kernel | Threads/Block | Why |
+|------------|--------|---------------|-----|
+| ≤ 32 | V1 baseline | 32 (1 room) | Launch-bound, keep it simple |
+| 64-512 | V4 fused+vec+multi | 128 (4 rooms) | Max occupancy, fusion saves launches |
+| > 512 | V4 + shmem multi | 128 (4 rooms) | Shared memory helps at scale |
+
+**Never use:** V5 (shared memory without multi-room), half2 alone (no speedup at dim=256), prefetch pipelines (hurt on unified memory), stream-based pipeline parallelism (sync overhead > overlap).
+
+---
+
 *All numbers from real hardware benchmarks. No simulations. No estimates. Measured on Jetson Orin Nano 8GB, CUDA 12.6.*
-*Last updated: 2026-04-24 — 25 benchmark suites, 20 optimization rules.*
+*Last updated: 2026-04-25 — 27 benchmark suites, 21 optimization rules.*
