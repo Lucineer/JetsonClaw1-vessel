@@ -5,7 +5,7 @@
 **Date:** 2026-04-24
 **Hardware:** Jetson Orin Nano 8GB, 1024 CUDA cores, 8GB unified RAM, passive cooling
 **Software:** CUDA 12.6, TensorRT 10.3, cuBLAS 12.6
-**Benchmarks:** 13 real-hardware suites, 17 source files
+**Benchmarks:** 15 real-hardware suites, 19 source files
 
 ---
 
@@ -13,7 +13,7 @@
 
 On the Jetson Orin Nano, a chip marketed for edge AI inference, we find that **the GPU is dramatically underutilized**. In room inference workloads, 85%+ of latency is CPU-GPU dispatch overhead, not actual computation. Raw CUDA kernels achieve 129K qps while TensorRT achieves only 17K qps — the gap is entirely framework overhead, not GPU compute. cuBLAS reaches 1,869 GFLOPS on 256×256 GEMM while a naive Tensor Core implementation reaches only 97.6 GFLOPS — a 19× gap from software optimization alone.
 
-This document presents evidence from 13 real-hardware benchmark suites and proposes the **Weight-Swap Architecture**, a novel approach that turns room-switching from a cold-start problem into a cache problem, achieving 31,000× faster hot-swap than engine rebuilding. The final production architecture achieves **100–4,700× faster than TensorRT** depending on batch size.
+This document presents evidence from 15 real-hardware benchmark suites and proposes the **Weight-Swap Architecture**, a novel approach that turns room-switching from a cold-start problem into a cache problem, achieving 31,000× faster hot-swap than engine rebuilding. The final production architecture achieves **100–4,700× faster than TensorRT** depending on batch size.
 
 ---
 
@@ -320,7 +320,7 @@ Based on 13 benchmark suites, the definitive deckboss configuration:
 | 256 rooms (large batch) | 69.1M | 4,000× |
 | 256 rooms (shmem+vec) | 81.8M | 4,700× |
 
-### 12 Optimization Rules
+### 14 Optimization Rules
 1. **Batch rooms, never dispatch per-room** — 130× at 256 rooms
 2. **Use 4 CUDA streams** — 2.25× at production batch
 3. **Never combine CUDA Graphs with streams** — 0.88× conflict
@@ -333,6 +333,8 @@ Based on 13 benchmark suites, the definitive deckboss configuration:
 10. **Consolidate fleet requests** — batch > multi-stream isolation
 11. **cuBLAS for standard GEMM** — custom TC kernels 19× slower
 12. **Weight swap for room updates** — 31,000× faster than engine rebuild
+13. **Zero-copy output** — cudaHostAllocMapped eliminates D2H (3.7× at 1 room)
+14. **Async pinned input** — cudaMemcpyAsync with pinned host memory (5.1× H2D)
 
 ---
 
@@ -346,6 +348,85 @@ The Weight-Swap Architecture addresses this by:
 3. Reducing the problem to memory management (cacheable, predictable)
 
 For deckboss, this means a single Jetson can serve an entire fleet's room inference needs — 2,000+ rooms, sub-millisecond latency, fully autonomous, no cloud dependency. At maximum throughput, raw CUDA achieves **100–4,700× faster than TensorRT** for room inference.
+
+---
+
+## 13. Pinned Memory and Zero-Copy
+
+On Jetson Orin (unified memory, no discrete VRAM), memory transfer patterns differ from desktop GPUs.
+
+### Pinned vs Pageable
+| Transfer | 1 room | 64 rooms | 256 rooms |
+|----------|--------|----------|-----------|
+| Pageable D2H | 35.2 μs | 35.7 μs | 35.8 μs |
+| Pinned D2H | 34.0 μs | 34.1 μs | 41.7 μs |
+| Speedup | 1.04× | 1.05× | 0.86× |
+
+Pinned memory barely helps — unified memory already provides efficient transfers.
+
+### Async Pinned D2H
+Overlapping compute with copy saves ~10μs:
+- Sync: 33.8 μs → Async: 24.3 μs (1.39×)
+- Async is always better for D2H on Jetson
+
+### Zero-Copy (cudaHostAllocMapped) — THE WINNER
+Writing directly to host-visible mapped memory eliminates D2H entirely:
+
+| Rooms | Standard | Zero-Copy | Speedup |
+|-------|----------|-----------|--------|
+| 1 | 24.4 μs | 6.6 μs | **3.70×** |
+| 6 | 14.4 μs | 7.8 μs | **1.84×** |
+| 64 | 13.8 μs | 7.8 μs | **1.76×** |
+| 256 | 17.4 μs | 11.3 μs | **1.54×** |
+
+**Key finding:** Zero-copy latency stays FLAT at ~7-8μs regardless of batch size. Standard mode grows from 24→41μs because D2H copy scales with data size.
+
+### Async H2D
+- Pageable: 15.7 μs → Pinned async: 3.07 μs (**5.1×**)
+- Always use async pinned for host-to-device transfers
+
+### Production Rule
+Use `cudaHostAllocMapped` for output buffers. Use async `cudaMemcpyAsync` with pinned memory for input uploads. This eliminates ~28μs of D2H overhead per inference call.
+
+---
+
+## 14. Streaming Inference Pipeline
+
+Production pattern: continuous inference with batched dispatch.
+
+### Dispatch Strategies
+
+| Strategy | Throughput | p50 | p95 | p99 |
+|----------|-----------|-----|-----|-----|
+| Naive (1/request) | 36.5K req/s | 13.8μs | 14.6μs | 15.3μs |
+| Batched (64) | 64.7K req/s | 2.3μs | 2.3μs | 34.3μs |
+| Timeout-flush | 52.0K req/s | 2.3μs | 33.9μs | 34.2μs |
+
+### Sustained GPU Throughput
+
+| Batch | us/batch | Room-qps |
+|-------|----------|----------|
+| 1 | 6.1 | 164K |
+| 6 | 5.7 | 1.1M |
+| 32 | 5.7 | 5.6M |
+| 64 | 6.0 | 10.7M |
+| 128 | 7.1 | 17.9M |
+| 256 | 8.4 | 30.6M |
+
+### Key Findings
+1. **Batched dispatch: 1.77× throughput** over naive, 6× better p50 latency
+2. **p95/p99 spike** at batch flush boundary (every 64th request pays full batch cost)
+3. **Timeout-flush** balances latency/throughput: 1.42× overall, same p50
+4. **GPU saturates at batch ≥ 128** (17.9M room-qps, approaching bandwidth ceiling)
+
+### Production Design
+```
+Batch buffer: 64 rooms (memory-bound threshold)
+Timeout: 100μs (balances latency vs throughput)
+Output: zero-copy mapped memory
+Input: async pinned upload
+Streams: 4 for pipeline overlap
+```
 
 ---
 
@@ -368,6 +449,8 @@ All benchmarks are in the `gpu-native-room-inference` and `tensorrt_build` repos
 | 11 | Stream priority | `benchmarks/real_hardware/stream_priority.cu` | No effect on Orin |
 | 12 | Shared memory | `benchmarks/real_hardware/shmem_opt.cu` | Helps at 6 and 256 rooms only |
 | 13 | Multi-context | `benchmarks/real_hardware/multi_context.cu` | Batching > agent isolation |
+| 14 | Pinned memory | `benchmarks/real_hardware/pinned_mem.cu` | Zero-copy eliminates D2H (3.7×) |
+| 15 | Streaming pipeline | `benchmarks/real_hardware/streaming.cu` | Batched dispatch 1.77× throughput |
 
 Additional implementation files:
 - `benchmarks/real_hardware/l2_cache_bench.cu` — L2 cache effectiveness

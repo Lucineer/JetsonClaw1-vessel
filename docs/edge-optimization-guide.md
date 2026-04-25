@@ -1,5 +1,5 @@
 # Jetson Edge GPU Optimization Guide
-## Practical Rules from 13 Benchmark Suites on Real Hardware
+## Practical Rules from 15 Benchmark Suites on Real Hardware
 
 **Hardware:** Jetson Orin Nano 8GB, 1024 CUDA cores, LPDDR5 128-bit, passive cooling
 **CUDA:** 12.6 | **TensorRT:** 10.3 | **Date:** 2026-04-24
@@ -15,7 +15,7 @@
 | CUDA Graphs | For single-call latency | Combine with streams |
 | cuBLAS | Use for GEMM | Write custom TC kernels |
 | TRT | For complex models | For simple dot products |
-| Shared memory | ≤6 rooms or ≥256 batch | 32-128 rooms per batch |
+| Output transfer | Zero-copy (mapped) | cudaMemcpy D2H |
 | Weight switching | CUDA memcpy (1μs) | Engine rebuild (300ms) |
 | Engine building | On-device (0.3-1.5s) | Cross-compile from cloud |
 | Cooling | Passive is fine | Worry about 48-49°C |
