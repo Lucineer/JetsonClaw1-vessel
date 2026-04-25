@@ -321,6 +321,143 @@ For 256-dim rooms: 1024 bytes read per room. At 44 GB/s practical bandwidth: **0
 | Weight swap vs engine rebuild | 31,000× |
 | 4 streams vs baseline | 2.25× |
 | Batch 1024 vs single room | 263× |
+| Shmem+vec at 256 rooms | 1.18× |
+| Shmem at 6 rooms | 1.35× |
+
+---
+
+## Section 9: Shared Memory Optimization (Afternoon Session)
+
+We tested 5 kernel variants across 5 batch sizes to determine when shared memory helps:
+
+### Kernel Variants
+1. **Baseline** — global memory only (current production)
+2. **Vectorized** — half2 loads (2 values per read)
+3. **Shmem single** — shared mem, 1 room/block
+4. **Shmem multi** — shared mem, 2 rooms/block
+5. **Shmem+vec** — shared mem + vectorized, 2 rooms/block
+
+### Results
+
+| Batch | Baseline | Shmem+Vec (2/block) | Speedup |
+|-------|----------|-------------------|---------|
+| 6 rooms | 7.6 μs | 5.6 μs | 1.37× |
+| 32 rooms | 5.2 μs | 5.8 μs | 0.90× |
+| 64 rooms | 5.7 μs | 5.8 μs | 0.98× |
+| 128 rooms | 5.8 μs | 6.4 μs | 0.91× |
+| 256 rooms | 7.7 μs | 6.5 μs | 1.18× |
+
+### Why the Inverted Pattern?
+
+**Small batches (launch-bound):** GPU SMs are idle. Shared memory lets idle SMs preload data while waiting for the next launch, effectively hiding the 5μs launch latency.
+
+**Large batches (memory-bound):** All SMs are busy. Shared memory's `__syncthreads()` cost exceeds any preload benefit. The L2 cache already handles sequential global memory access efficiently.
+
+**At 256 rooms (crossover):** Multi-room-per-block increases per-SM utilization enough to overcome sync overhead. Two rooms per block means each SM has 2 warps to schedule, improving pipeline utilization.
+
+### Production Rule
+```
+if batch_size <= 6:    use shmem (1.35x)
+if batch_size >= 256:  use shmem+vec (2 rooms/block, 1.18x)
+otherwise:            use baseline global memory
+```
+
+---
+
+## Section 10: Fleet Multi-Context Concurrency
+
+### Question
+Can multiple autonomous agents share one Jetson Orin GPU for concurrent inference?
+
+### Hardware Confirmation
+- `concurrentKernels: YES` — hardware supports true kernel concurrency
+- Orin scheduler handles SM partitioning automatically
+
+### Results
+
+| Config | Latency | Total room-qps | Notes |
+|--------|---------|---------------|-------|
+| 1 stream, 6 rooms | 7.9 μs | 763K | Baseline |
+| 2 streams, 12 rooms | 7.0 μs | 1.7M | Parallel! |
+| 4 streams, 24 rooms | 14.3 μs | 1.7M | Diminishing |
+| 1 stream, 24 rooms | 5.4 μs | 4.5M | Always better |
+
+### Key Finding
+**1×24 batched is 2.6× faster than 4×6 interleaved.** Batching always wins over multi-stream isolation.
+
+### Fleet Architecture Implications
+1. **Consolidate** all inference requests into one batch, regardless of source agent
+2. **Single shared weight buffer** > per-agent copies
+3. **One kernel launch** for all rooms > multiple launches per agent
+4. Multi-stream is for **pipelining** (load + compute overlap), not agent isolation
+5. A single Orin can serve 3+ agents simultaneously if requests are batched
+
+### Memory Budget
+- Free: 4.2 GB / 7.6 GB total
+- Per room (dim=256): 512 bytes FP16
+- Max rooms: ~15K before OOM
+- Per-agent context overhead: negligible
+
+---
+
+## Section 11: Stream Priority (No Effect)
+
+### Test
+Ran hot rooms on high-priority streams while cold room loading ran on low-priority streams.
+
+### Results
+- Orin priority range: [-5, 0] (negative = higher, reversed from desktop GPUs)
+- High vs low priority: **1.01×** — no measurable difference
+- Contention penalty: **3.4×** regardless of priority
+
+### Conclusion
+**Don't use stream priorities on Orin.** The GPU scheduler treats all streams equally. For temporal isolation, schedule background work outside inference windows instead.
+
+---
+
+## Section 12: Production Architecture — Final
+
+Based on 13 benchmark suites, the definitive deckboss configuration:
+
+### Architecture
+```
+┌──────────────────────────────────────────────┐
+│              deckboss_runtime                 │
+├──────────────────────────────────────────────┤
+│  Direct-mapped weights [room_id × dim]       │
+│  4 CUDA streams, round-robin dispatch        │
+│  FP16 precision (no quantization)            │
+│  L2 cache automatic (11× for hot rooms)      │
+│  No CUDA Graphs (conflict with streams)      │
+│  No gather kernel (direct offset)            │
+│  Shmem+vec at batch ≥ 256 only               │
+└──────────────────────────────────────────────┘
+```
+
+### Performance Table
+
+| Scenario | Room-qps | vs TensorRT |
+|----------|----------|-------------|
+| 1 room (L2 cached) | 2.5M | 147× |
+| 6 rooms (production) | 1.7M | 100× |
+| 6 rooms (shmem) | 1.1M | 62× |
+| 64 rooms (fleet) | 17.8M | 1,000× |
+| 256 rooms (large batch) | 69.1M | 4,000× |
+| 256 rooms (shmem+vec) | 81.8M | 4,700× |
+
+### Optimization Rules (Complete)
+1. **Batch rooms, never dispatch per-room** (130×)
+2. **Use 4 CUDA streams** (2.25× at production batch)
+3. **Never combine CUDA Graphs with streams** (0.88×)
+4. **FP16 is optimal** — INT8/INT4 slower (dequant overhead)
+5. **Direct-mapped weights** — no gather kernel (378% overhead)
+6. **Use L2 cache** — hot rooms get 11× automatically
+7. **Shmem+vec only at batch ≥ 256** (1.18× at 256, hurts below)
+8. **Don't quantize** — bandwidth savings < dequant compute cost
+9. **Don't use stream priorities** — no effect on Orin
+10. **Consolidate fleet requests** — batch > multi-stream isolation
+11. **cuBLAS for standard GEMM** — custom TC kernels 19× slower
+12. **Weight swap for room updates** — 31,000× faster than engine rebuild
 
 ---
 
@@ -332,14 +469,14 @@ All benchmarks are in the `gpu-native-room-inference` and `tensorrt_build` repos
 - `benchmarks/real_hardware/prefetch_dispatch.cu` — Stream benchmarks
 - `benchmarks/real_hardware/ultimate_bench.cu` — All optimizations combined
 - `benchmarks/real_hardware/mem_bandwidth.cu` — Memory bandwidth analysis
-- `tensorrt_build/trt_benchmark_suite.py` — TRT room benchmarks
-- `tensorrt_build/batch_benchmark.py` — Multi-room batching
-- `tensorrt_build/production_demo.py` — End-to-end demo
-- `tensorrt_build/weight_swap_architecture.py` — Weight-swap analysis
-
-All benchmarks are in the `gpu-native-room-inference` and `tensorrt_build` repositories:
-- `benchmarks/real_hardware/gemm_benchmark_v2.cu` — TC vs cuBLAS
-- `benchmarks/real_hardware/cuda_graphs_bench.cu` — CUDA Graphs
+- `benchmarks/real_hardware/quant_bench.cu` — FP16 vs INT8 vs INT4
+- `benchmarks/real_hardware/l2_cache_bench.cu` — L2 cache effectiveness
+- `benchmarks/real_hardware/room_cache.cu` — LRU cache implementation
+- `benchmarks/real_hardware/stream_priority.cu` — Stream priority test
+- `benchmarks/real_hardware/production_inference.cu` — Batched weight gather
+- `benchmarks/real_hardware/final_arch.cu` — Final architecture benchmark
+- `benchmarks/real_hardware/multi_context.cu` — Fleet concurrency
+- `benchmarks/real_hardware/shmem_opt.cu` — Shared memory variants
 - `tensorrt_build/trt_benchmark_suite.py` — TRT room benchmarks
 - `tensorrt_build/batch_benchmark.py` — Multi-room batching
 - `tensorrt_build/production_demo.py` — End-to-end demo
