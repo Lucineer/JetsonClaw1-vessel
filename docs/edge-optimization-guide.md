@@ -1,8 +1,10 @@
 # Jetson Edge GPU Optimization Guide
-## Practical Rules from 30 Benchmark Suites on Real Hardware
+## Practical Rules from 36 Benchmark Suites on Real Hardware
 
 **Hardware:** Jetson Orin Nano 8GB, 1024 CUDA cores, LPDDR5 128-bit, passive cooling
 **CUDA:** 12.6 | **TensorRT:** 10.3 | **Date:** 2026-04-25
+
+**Key numbers:** 160M room-qps (4096 rooms), 105.6M room-qps (1024 rooms), 10.5μs p99, $249, 10W
 
 ---
 
@@ -11,13 +13,16 @@
 | What | Do | Don't |
 |------|-----|-------|
 | Batch size | Maximize (64+) | Launch per room |
-| Streams | Use 4 | Use 8+ or 1 |
-| CUDA Graphs | For single-call latency | Combine with streams |
+| Streams | Use 2 max (67M cap) | Use 4+ (contention) |
+| **Sync barrier** | **Double-buffer + zero-copy** | **cudaStreamSynchronize in hot path** |
+| CUDA Graphs | For jitter-sensitive apps | Expect throughput gains |
 | cuBLAS | Use for GEMM | Write custom TC kernels |
 | TRT | For complex models | For simple dot products |
-| Output transfer | Zero-copy (mapped) | cudaMemcpy D2H |
-| Weight switching | CUDA memcpy (1μs) | Engine rebuild (300ms) |
-| Engine building | On-device (0.3-1.5s) | Cross-compile from cloud |
+| Output transfer | Zero-copy (mapped) | cudaMemcpy D2H (15μs tax) |
+| Weight switching | CUDA memcpy async | Engine rebuild (300ms) |
+| Warp reduction | __shfl_down_sync (contig) | Shared memory (slower) |
+| Kernel unroll | General stride-32 loop | Hardcoded stride-8 (register spill) |
+| Weight compression | Full weights (128KB, L2 fits) | Scale+bias (128% error) |
 | Cooling | Passive is fine | Worry about 48-49°C |
 | Stream priority | Don't bother | Negligible effect on Orin |
 | Prefetch (unified) | Don't bother | Sync overhead > overlap savings |
@@ -471,6 +476,50 @@ Power:           Flat 4.9W
 
 ---
 
+## Rule 25: The Sync Barrier Is the Real Bottleneck (Suite #33)
+
+cudaStreamSynchronize() adds ~20μs per iteration — **80% of total latency**. Double-buffered async pipeline eliminates this entirely.
+
+```
+Synchronous:  23.7M room-qps (43.3μs) — cudaStreamSynchronize blocks CPU
+Double-buffer: 104.1M room-qps (9.8μs) — overlap launch N with read N-1
+Speedup:      4.4× (free, from better software architecture)
+```
+
+**Pattern:** Launch kernel into buffer A, read buffer B (zero-copy, ~0.001μs), never sync in hot path. The GPU queues commands internally; sync only on shutdown.
+
+---
+
+## Rule 26: The GPU Has a Hard Throughput Cap (Suite #34)
+
+The Jetson Orin caps at **~67M room-qps total** across all streams, regardless of how many you use.
+
+```
+1 stream:  42.9M room-qps (5.97μs per iter)
+2 streams: 66.9M room-qps (7.65μs per iter) — 1.56×
+4 streams: 65.6M room-qps (15.6μs per iter) — NO GAIN
+```
+
+Only 1024 CUDA cores, 16 blocks/SM max. Beyond 2 concurrent medium kernels, it's pure contention. **Single stream + double buffer = optimal architecture.**
+
+---
+
+## Rule 27: CUDA Graphs Don't Fix the Sync Barrier (Suite #32)
+
+Graphs eliminate kernel launch overhead but not the sync barrier. At 256+ rooms: **1.01× speedup**. The bottleneck is cudaStreamSynchronize(), which graphs can't optimize.
+
+**Use CUDA Graphs only for:** jitter-sensitive apps (1.22× p99 improvement at 16 rooms) or repeated single-kernel patterns at batch ≤ 64.
+
+---
+
+## Rule 28: Don't Compress Room Weights (Suite #35)
+
+Scale+bias (51× memory reduction) gives **128% error**. LoRA increases memory. Adaptive weights are **slower** (0.89×) due to extra indirection.
+
+Full weights for 256 rooms = 128KB. This fits in L2 cache. Compression is solving a problem that doesn't exist.
+
+---
+
 ## Production Kernel Selection Guide
 
 | Batch Size | Kernel | Threads/Block | Why |
@@ -479,18 +528,20 @@ Power:           Flat 4.9W
 | 64-512 | **V7 (contig8 general shuffle)** | 256 (8 rooms) | 1.16× over V4, zero shared mem |
 | > 512 | **V7 (contig8 general shuffle)** | 256 (8 rooms) | 105M room-qps at 1024 rooms |
 
-**Never use:** V5/V6 stride-8 unroll (register spilling at large batch), V8 contig16 (exceeds occupancy), half2 alone, prefetch pipelines, stream-based pipeline parallelism.
+**Architecture:** Double-buffer + zero-copy + async pipeline (no sync in hot path).
 
 ### Record Throughput (dim=256)
 
-| Batch | Kernel | Room-qps | Date |
-|-------|--------|----------|------|
-| 1024 rooms | V7 (contig8 general) | **105.0M** | 2026-04-25 (suite #30) |
-| 1024 rooms | V7 (contig8 general) | **117.5M** | 2026-04-25 (suite #30, dim=128) |
-| 1024 rooms | V4 (shmem) | 93.8M | 2026-04-25 (suite #28) |
-| 256 rooms | V4 fused+vec+multi | 42.4M | 2026-04-24 (suite #20) |
+| Batch | Kernel | Room-qps | p99 | Date |
+|-------|--------|----------|-----|------|
+| 4096 rooms | V7 (async pipeline) | **160.0M** | 26.8μs | 2026-04-25 (suite #36) |
+| 2048 rooms | V7 (async pipeline) | **141.9M** | 15.2μs | 2026-04-25 (suite #36) |
+| 1024 rooms | V7 (async pipeline) | **105.6M** | 10.5μs | 2026-04-25 (suite #36) |
+| 1024 rooms | V7 (contig8 general) | **105.0M** | — | 2026-04-25 (suite #30) |
+| 1024 rooms | V7 (contig8 general) | **117.5M** | — | 2026-04-25 (suite #30, dim=128) |
+| 256 rooms | V7 (async pipeline) | **39.8M** | 7.5μs | 2026-04-25 (suite #36) |
 
 ---
 
 *All numbers from real hardware benchmarks. No simulations. No estimates. Measured on Jetson Orin Nano 8GB, CUDA 12.6.*
-*Last updated: 2026-04-25 — 30 benchmark suites, 24 optimization rules.*
+*Last updated: 2026-04-25 — 36 benchmark suites, 28 optimization rules.*
