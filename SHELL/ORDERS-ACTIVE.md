@@ -41,3 +41,18 @@
 - 1 bottle found in Oracle1 inbox (dated April 14)
 - All bottles last pulled/applied: April 19 19:23 (6 days ago)
 - No action required - no new content to process
+
+## 2026-04-26 21:52 UTC — Bottle Check from Cron Job (Current)
+**Status:** IN PROGRESS
+**Directive:** Check for new bottles from Forgemaster: run 'cd /tmp/forgemaster && git pull && git log --since='20 minutes ago' --oneline'. If new commits found, read the files and report findings. Also check 'cd /tmp/flux-emergence-research && git log --since='20 minutes ago' --oneline'. Report anything new.
+**Cron ID:** 1f0772a1-bbe7-4981-a8ee-368a4bd99cb4 (recurring)
+**Priority:** CRON TASK (Immediate execution)
+
+### Steps:
+- [ ] Change to Forgemaster directory and pull latest
+- [ ] Check Forgemaster commits since 20 minutes ago
+- [ ] Change to flux-emergence-research directory and pull latest
+- [ ] Check flux-emergence-research commits since 20 minutes ago
+- [ ] Read any new files if commits found
+- [ ] Report findings
+- [ ] Update ORDERS-ACTIVE.md with status and findings
