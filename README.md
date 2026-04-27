@@ -1,60 +1,94 @@
-# Edge GPU Lessons
+# JetsonClaw1-vessel
 
-Field guide for running AI workloads on edge hardware — specifically Jetson Orin Nano 8GB. Benchmarks, CUDA rules, pitfalls, and what actually works vs what OOMs.
+> ⚡ Git-Agent Vessel — Lucineer realm specialist. Hardware, low-level systems, fleet infrastructure.
+> Captain: Casey Digennaro. Lighthouse: Oracle1.
 
-## Why This Exists
+## What This Is
 
-8GB unified RAM sounds fine until you try to run a 4B parameter model at 8-bit precision and everything dies. These are the hard-won lessons from months of edge deployment.
+JC1 is Casey's primary vessel — the one that boots on actual Jetson Orin Nano 8GB metal. Not the fastest or the biggest. The one in the engine room who knows which pipe leaks and how to fix it with a wrench.
 
-## Key Facts
-
-| Spec | Value |
-|------|-------|
-| GPU | NVIDIA Jetson Orin Nano |
-| CUDA Cores | 1024 |
-| Unified RAM | 8GB (shared CPU+GPU) |
-| NVMe | 2TB |
-| OS | Ubuntu 20.04, Linux 5.15.148-tegra (arm64) |
-| CUDA | 12.6 at /usr/local/cuda-12.6 |
-| Python | 3.10 |
-| GLIBC | 2.35 (limits prebuilt binaries) |
-| Rust | stable (aarch64-unknown-linux-gnu) |
-| nvcc | /usr/local/cuda-12.6/bin/nvcc |
-| nvidia-smi | /usr/sbin/nvidia-smi |
-
-## What Fits in 8GB
-
-| Model | Quant | Memory | Status |
-|-------|-------|--------|--------|
-| Phi-4-mini | int4 | ~2GB | ✅ Works |
-| Qwen3-4B | int4 | ~2.5GB | ✅ Works |
-| Qwen3-32B | int4 | ~18GB | ❌ OOM |
-| ERNE-4.5-300B | any | ~150GB+ | ❌ OOM |
-| DeepSeek-R1-1.5B | q8 | ~1.5GB | ✅ Works |
-
-## CUDA Rules
-
-1. **nvcc is at `/usr/local/cuda-12.6/bin/nvcc`** — not in PATH by default
-2. **nvidia-smi is at `/usr/sbin/nvidia-smi`** — not in PATH by default
-3. **store_matrix_sync = 6-17x speedup** over separate store+sync
-4. **WMMA (Tensor Cores)** available but limited to specific shapes
-5. **Thermal**: 48-49°C sustained, no throttle observed
-6. **Memory**: Python OOMs at ~6.5GB, Rust/C can use more
-
-## Reports
+## Structure
 
 ```
-reports/
-├── 2026-04-27-trending-edge-tech.md    # April 2026 trending analysis
-└── 2026-04-27-baton-improvements.md    # Context compaction improvements
+├── AGENTS.md              # Bootstrap protocol, red lines, group chat rules
+├── SOUL.md                # Who JC1 is
+├── IDENTITY.md            # Name, creature, mission, fleet position
+├── USER.md                # About Casey
+├── TOOLS.md               # Environment-specific notes (fleet bottles, cameras, SSH)
+├── STANDING_ORDERS.md     # Active directives (LAW)
+├── ORDERS.md              # All orders from Casey
+├── HEARTBEAT.md           # Heartbeat checklist
+├── SHELL/                 # Persistent castle — survives compaction/crashes/replacement
+│   ├── BOARDING.md        # New agent start here
+│   ├── ORDERS-ACTIVE/     # Currently executing orders
+│   ├── EXECUTION-PLANS/   # Detailed plans for complex work
+│   └── FAILURE-POSTMORTEM/# What went wrong and why
+├── shell/                 # Legacy shell (being migrated to SHELL/)
+├── memory/                # Daily logs (YYYY-MM-DD.md)
+├── docs/                  # Documentation, community README
+├── deckboss/              # GPU inference C API runtime
+├── for-fleet/             # Bottles to/from fleet (forgemaster, oracle1)
+└── archive/               # Historical artifacts (benchmarks, experiments, old docs)
 ```
+
+## Current Capabilities
+
+### GPU Inference Research
+- **72 benchmark suites** on Jetson Orin Nano 8GB — documented in [gpu-native-room-inference](https://github.com/Lucineer/gpu-native-room-inference)
+- **185M room-qps sustained** (INT8 + launch_bounds + fast_math, 306 MHz)
+- **71 optimization rules** from real hardware, not simulation
+- Theoretical peak at max clock: ~616M room-qps (3.3× headroom untapped)
+
+### CUDA Ecosystem (6 Rust crates)
+- [cuda-instruction-set](https://crates.io/crates/cuda-instruction-set) — 80 opcodes, assembler/disassembler
+- [cuda-energy](https://crates.io/crates/cuda-energy) — ATP budgets, circadian, apoptosis
+- [cuda-assembler](https://crates.io/crates/cuda-assembler) — text-to-bytecode assembler
+- [cuda-forth](https://crates.io/crates/cuda-forth) — Forth-like agent language
+- [cuda-biology](https://crates.io/crates/cuda-biology) — biological agent runtime
+- [cuda-neurotransmitter](https://crates.io/crates/cuda-neurotransmitter) — signal-to-gene pathways
+
+### Hardware
+- Jetson Orin Nano 8GB, ARM64, 1024 CUDA cores
+- CUDA 12.6, SM 8.7 (Ampere), 2MB L2 cache
+- Passive cooling, 48-49°C sustained, 51°C headroom to junction max
+- 8GB unified RAM, 2TB NVMe
+
+## Fleet Position
+
+- **Captain:** Casey Digennaro
+- **Lighthouse:** Oracle1 (cloud/PLATO runtime)
+- **Sister ships:** KimiClaw (Moonshot tools), fleet Zeroclaws
+- **Protocol:** Iron-to-Iron
+- **Bottles:** Checked via `TOOLS.md` paths (forgemaster + oracle1 inboxes)
+
+## Context Architecture: Plato-First
+
+**Every vessel in the fleet follows this.** Your bootstrap is a skeleton. Your knowledge lives in Plato.
+
+### The Rule
+- Bootstrap files = orientation only (SOUL, IDENTITY, active orders). Target: <20KB total.
+- MEMORY.md = an index with pointers, not a database. Target: <3KB.
+- All detailed knowledge (GPU benchmarks, repo inventories, architecture decisions, brand details) goes into **Plato tiles** where the entire fleet can see and query it.
+- Context in Plato = fleet-visible, persistent across days, queryable by any agent.
+- Context in bootstrap = siloed to you, burned every session, bloats compaction.
+
+### Why
+- Other agents can read tiles you wrote days ago — shared memory, not private notes.
+- Lean bootstrap = more room to actually work before compaction.
+- If your Jetson dies, your knowledge survives in the fleet walls.
+
+### How
+- Plato tiles are files pushed to the fleet repo `research/` directory.
+- Oracle1 PLATO Shell: `http://147.224.38.131:8848`
+- API: `POST /cmd/shell` with `{agent, command}` — read and write tiles.
+- Onboarding: read bootstrap skeleton → orient → query Plato for detail → work.
+
+See `SHELL/BOARDING.md` for the full onboarding protocol.
+
+## The Saltwater Principle
+
+Distribution > redundancy for backups. Every piece of knowledge in at least 3 fleet repos. Kill any single node → zero knowledge loss. The vessel repo is the backup, not the primary.
 
 ---
 
-## Fleet Context
-
-Part of the Lucineer/Cocapn fleet. See [fleet-onboarding](https://github.com/Lucineer/fleet-onboarding) for boarding protocol.
-
-- **Vessel:** JetsonClaw1 (Jetson Orin Nano 8GB)
-- **Domain:** Low-level systems, CUDA, edge computing
-- **Comms:** Bottles via Forgemaster/Oracle1, Matrix #fleet-ops
+**JC1 is replaceable. The shell is not.** — Casey, 2026-04-23
