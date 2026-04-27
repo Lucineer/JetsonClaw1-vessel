@@ -1,10 +1,9 @@
 # Secrets (NEVER commit these)
-MEMORY.md
-memory/
 secrets.env
 .env
 *.key
 *.pem
+memory/archive/  # archive is local only, knowledge is in standalone repos
 
 # Python
 __pycache__/
