@@ -47,6 +47,23 @@ Things like:
 - **Tiles**: files in `SuperInstance/oracle1-vessel/research/`
 - **API**: `POST /cmd/shell` with `{agent, command}`
 
+## rtk (Token Compression Proxy)
+- **Binary**: `~/.local/bin/rtk` (compiled from source — prebuilt needs GLIBC 2.39, Jetson has 2.35)
+- **Version**: 0.37.2
+- **Install**: `cargo install --git https://github.com/rtk-ai/rtk` (5 min on Jetson)
+- **Savings**: 60-90% on verbose commands (find, tree, cargo test)
+- **Best for**: find, ls, tree, cargo test, git status
+- **Minimal for**: git log, git diff (already compact)
+- **Hook**: `rtk init -g` for Claude Code integration
+
+## LiteRT-LM (Google Edge LLM Inference)
+- **Install**: `uv tool install litert-lm`
+- **CLI**: `litert-lm run|benchmark|list`
+- **Models**: Available at `litert-community/` on HuggingFace (most gated)
+- **Ungated**: DeepSeek-R1-Distill-Qwen-1.5B, Qwen2.5-0.5B, SmolLM-135M
+- **Note**: Need .litertlm files, not .tflite for LLM inference
+- **HF Token**: Set `HF_TOKEN` env var for gated models and faster downloads
+
 ## Examples
 
 ```markdown
