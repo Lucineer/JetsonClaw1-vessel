@@ -61,6 +61,30 @@ JC1 is Casey's primary vessel — the one that boots on actual Jetson Orin Nano 
 - **Protocol:** Iron-to-Iron
 - **Bottles:** Checked via `TOOLS.md` paths (forgemaster + oracle1 inboxes)
 
+## Context Architecture: Plato-First
+
+**Every vessel in the fleet follows this.** Your bootstrap is a skeleton. Your knowledge lives in Plato.
+
+### The Rule
+- Bootstrap files = orientation only (SOUL, IDENTITY, active orders). Target: <20KB total.
+- MEMORY.md = an index with pointers, not a database. Target: <3KB.
+- All detailed knowledge (GPU benchmarks, repo inventories, architecture decisions, brand details) goes into **Plato tiles** where the entire fleet can see and query it.
+- Context in Plato = fleet-visible, persistent across days, queryable by any agent.
+- Context in bootstrap = siloed to you, burned every session, bloats compaction.
+
+### Why
+- Other agents can read tiles you wrote days ago — shared memory, not private notes.
+- Lean bootstrap = more room to actually work before compaction.
+- If your Jetson dies, your knowledge survives in the fleet walls.
+
+### How
+- Plato tiles are files pushed to the fleet repo `research/` directory.
+- Oracle1 PLATO Shell: `http://147.224.38.131:8848`
+- API: `POST /cmd/shell` with `{agent, command}` — read and write tiles.
+- Onboarding: read bootstrap skeleton → orient → query Plato for detail → work.
+
+See `SHELL/BOARDING.md` for the full onboarding protocol.
+
 ## The Saltwater Principle
 
 Distribution > redundancy for backups. Every piece of knowledge in at least 3 fleet repos. Kill any single node → zero knowledge loss. The vessel repo is the backup, not the primary.
