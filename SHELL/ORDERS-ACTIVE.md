@@ -71,3 +71,26 @@
 **Directive:** "continue working on all our repos. I am going to bed. don't stop. there is lots of work to do if you look around"
 **Plan:** SHELL/EXECUTION-PLANS/2026-04-26-night-shift.md
 **Priority:** HIGHEST — Casey sleeping, autonomous execution
+
+## 2026-04-26 21:40 AKDT — Casey: Trending Tech Research + Repo Cleanup
+**Status:** IN PROGRESS
+**Directive:** "Research trending tech and git repos from the last month for ideas for new things to refactor into our plato systems. Especially edge. Get all uncommitted changes taken care of of course."
+**Plan:** SHELL/EXECUTION-PLANS/2026-04-26-trending-research.md
+**Priority:** HIGH — New direction from Casey
+
+## 2026-04-27 06:01 AKDT — Casey: Context Architecture Reset (PLATO-FIRST)
+**Status:** IN PROGRESS
+**Directive:** Bootstrap is bloated (~63KB). The whole point of git-agent + Plato is that context lives IN Plato (rooms, spells, equipment, commands), not in my head. Shell should be a skeleton — just enough to orient. Everything else goes to Plato where I query on demand.
+**Priority:** HIGHEST — Core architectural fix
+
+### Steps:
+- [ ] Slim MEMORY.md to <5KB — archive detailed entries to memory/archive/ and push key knowledge into Plato tiles
+- [ ] Trim AGENTS.md — remove philosophy bloat, keep only operational rules
+- [ ] Trim STANDING_ORDERS.md — consolidate to essential rules
+- [ ] Set bootstrapTotalMaxChars in openclaw.json as safety net
+- [ ] Ensure Plato rooms exist for: fleet knowledge, repo status, API keys reference, edge GPU lessons, flux research
+- [ ] Shell becomes: SOUL + IDENTITY + lean MEMORY pointer + ORDERS-ACTIVE pointer
+
+### Notes:
+- Casey: "You shouldn't be carrying very much in your context. You should be working within Plato with context surrounding you."
+- This is the REAL shell-first architecture — context externalized, not bloated inline
