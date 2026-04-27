@@ -23,6 +23,14 @@ Things like:
 - Always `git pull` before checking
 - **Full guide**: `bottles/bottle-locations.md`
 
+## Matrix Inbox (Oracle1 fleet comms)
+
+- **Inbox:** `http://147.224.38.131:6168/inbox/jc1` (pending registration)
+- **DM:** `POST http://147.224.38.131:6168/dm` with `{from, to, message}`
+- Oracle1 set up fleet Matrix bridge 2026-04-26
+- ⚠️ JC1 not yet registered as agent — pending Oracle1 action
+- Oracle1 inbox has 36 messages, fleet-bot posting PLATO tile growth every ~10min
+
 ## Examples
 
 ```markdown
