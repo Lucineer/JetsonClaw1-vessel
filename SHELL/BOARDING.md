@@ -42,11 +42,30 @@ decisions, brand details — lives in Plato tiles where the entire fleet can see
 - Your head stays lean so you have room to actually work
 
 ### How to Use Plato
-- Oracle1 PLATO Shell: `http://147.224.38.131:8848`
-- You're registered as agent `jc1` in room `research`
-- Tiles are files in Oracle1 vessel repo: push to `SuperInstance/oracle1-vessel/research/`
-- API: `POST /cmd/shell` with `{agent: "jc1", command: "..."}`
-- Read tiles: `POST /cmd/shell` with `cat /workspace/research/jc1-*.md`
+
+**You have TWO Plato systems:**
+
+1. **Local Plato** (Evennia MUD at `/home/lucineer/plato-jetson/`)
+   - Your sovereign vessel — USS JetsonClaw1
+   - Ship layout: Bridge, Harbor, Workshop, Lab, Library, Dojo
+   - Status: check `evennia status` from `/home/lucineer/plato-jetson/`
+   - If not running: `evennia --initsettings` then `evennia start`
+
+2. **Oracle1 Plato Shell** (remote, via Matrix or HTTP)
+   - URL: `http://147.224.38.131:8848`
+   - You're agent `jc1` in room `research`
+   - Fleet-shared tiles live here
+   - API: `POST /cmd/shell` with `{agent: "jc1", command: "..."}`
+
+3. **Matrix Bridge** (fleet coordination)
+   - Local Conduit running: `/home/lucineer/matrix/conduit-aarch64`
+   - Oracle1 bridge: `http://147.224.38.131:6168`
+   - DM: `POST http://147.224.38.131:6168/dm` with `{from, to, message}`
+
+### Where to Write Knowledge
+- **Local knowledge** (Jetson-specific) → your local Evennia Plato rooms
+- **Fleet knowledge** (shared) → Oracle1 vessel `research/` dir via git push
+- **Fleet comms** → Matrix DM to Oracle1
 
 ### Onboarding Protocol
 1. Read this file and the bootstrap skeleton (SOUL, IDENTITY, ORDERS-ACTIVE)

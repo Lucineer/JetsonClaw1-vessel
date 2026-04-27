@@ -25,11 +25,27 @@ Things like:
 
 ## Matrix Inbox (Oracle1 fleet comms)
 
-- **Inbox:** `http://147.224.38.131:6168/inbox/jc1` (pending registration)
-- **DM:** `POST http://147.224.38.131:6168/dm` with `{from, to, message}`
-- Oracle1 set up fleet Matrix bridge 2026-04-26
-- ⚠️ JC1 not yet registered as agent — pending Oracle1 action
-- Oracle1 inbox has 36 messages, fleet-bot posting PLATO tile growth every ~10min
+- **Conduit bridge running**: `/home/lucineer/matrix/conduit-aarch64` (local Matrix server)
+- **Oracle1 Matrix bridge**: `http://147.224.38.131:6168` — DM and inbox endpoints
+- **DM**: `POST http://147.224.38.131:6168/dm` with `{from, to, message}`
+- **Inbox**: `http://147.224.38.131:6168/inbox/jc1`
+- **Oracle1 inbox**: 36+ messages, fleet-bot posting PLATO tile growth every ~10min
+- ⚠️ JC1 Matrix registration status: needs verification
+
+## Local Plato (Evennia MUD)
+
+- **Repo**: `/home/lucineer/plato-jetson/` (Evennia 4.5.0)
+- **Ship layout**: Bridge, Harbor, Workshop, Lab, Library, Dojo
+- **Status**: NOT RUNNING — needs `evennia --initsettings` + start
+- **Port**: TBD (check settings.py after init)
+- **Side-tie protocol**: Harbor connects to Oracle1's lighthouse
+
+## Oracle1 Plato Shell (remote)
+
+- **URL**: `http://147.224.38.131:8848`
+- **JC1 agent**: registered as `jc1` in `research` room
+- **Tiles**: files in `SuperInstance/oracle1-vessel/research/`
+- **API**: `POST /cmd/shell` with `{agent, command}`
 
 ## Examples
 
