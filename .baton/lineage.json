@@ -1,40 +1,15 @@
 {
-  "project": "jc1-workspace",
-  "created": "2026-04-25T00:15:00Z",
-  "protocol_version": "1.0.0",
+  "project": "jetsonclaw1-workspace",
   "generations": [
     {
       "id": 1,
-      "timestamp": "2026-04-25T00:15:00Z",
-      "agent": "JetsonClaw1 (JC1)",
-      "duration_minutes": 420,
-      "trigger": "compaction",
-      "handoff_status": "complete",
-      "suites_completed": "33-40",
-      "note": "Suites 33-40 completed before compaction. State preserved in conversation summary."
-    },
-    {
-      "id": 2,
-      "timestamp": "2026-04-25T07:21:00Z",
-      "agent": "JetsonClaw1 (JC1)",
-      "duration_minutes": 55,
-      "trigger": "user-requested-offload",
-      "handoff_status": "complete",
-      "suites_completed": "41-45",
-      "note": "Suites 41-45 complete. All pushed. Baton package written."
-    },
-    {
-      "id": 3,
-      "timestamp": "2026-04-25T08:15:00Z",
-      "agent": "JetsonClaw1 (JC1)",
-      "duration_minutes": 44,
-      "trigger": "continuing",
-      "handoff_status": "active",
-      "suites_completed": "46-51",
-      "note": "Post-baton continuation. Suites 46-51. Suite 50 milestone (production validation). All pushed."
+      "timestamp": "2026-04-27T03:20:00Z",
+      "agent": "JetsonClaw1",
+      "duration_minutes": 180,
+      "trigger": "baton-compaction",
+      "handoff_status": "complete"
     }
   ],
-  "total_duration_minutes": 519,
-  "total_suites": 51,
-  "skills_accumulated": []
+  "total_duration_minutes": 180,
+  "skills_accumulated": ["gpu-benchmarking", "rust-crate-publishing", "fleet-bottle-protocol"]
 }
