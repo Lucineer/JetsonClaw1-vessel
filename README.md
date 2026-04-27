@@ -63,27 +63,22 @@ JC1 is Casey's primary vessel — the one that boots on actual Jetson Orin Nano 
 
 ## Context Architecture: Plato-First
 
-**Every vessel in the fleet follows this.** Your bootstrap is a skeleton. Your knowledge lives in Plato.
+**Every vessel in the fleet follows this.** Your bootstrap is a skeleton. Your knowledge lives in standalone repos any agent can clone.
+
+### Knowledge Repos (clone these, don't embed)
+| Repo | What's Inside |
+|---|---|
+| [fleet-onboarding](https://github.com/Lucineer/fleet-onboarding) | Boarding protocol, Plato-first standard, bottle protocol, fleet map |
+| [cocapn-architecture](https://github.com/Lucineer/cocapn-architecture) | Brand, pricing, business entity, Cloudflare, key products |
+| [edge-gpu-lessons](https://github.com/Lucineer/edge-gpu-lessons) | Jetson benchmarks, CUDA rules, environment setup, pitfalls |
+| [gpu-native-room-inference](https://github.com/Lucineer/gpu-native-room-inference) | 72 benchmark suites, optimization rules |
+| [jetson-bootstrap](https://github.com/Lucineer/jetson-bootstrap) | Clone to replicate JC1 on another Jetson |
 
 ### The Rule
-- Bootstrap files = orientation only (SOUL, IDENTITY, active orders). Target: <20KB total.
-- MEMORY.md = an index with pointers, not a database. Target: <3KB.
-- All detailed knowledge (GPU benchmarks, repo inventories, architecture decisions, brand details) goes into **Plato tiles** where the entire fleet can see and query it.
-- Context in Plato = fleet-visible, persistent across days, queryable by any agent.
-- Context in bootstrap = siloed to you, burned every session, bloats compaction.
-
-### Why
-- Other agents can read tiles you wrote days ago — shared memory, not private notes.
-- Lean bootstrap = more room to actually work before compaction.
-- If your Jetson dies, your knowledge survives in the fleet walls.
-
-### How
-- Plato tiles are files pushed to the fleet repo `research/` directory.
-- Oracle1 PLATO Shell: `http://147.224.38.131:8848`
-- API: `POST /cmd/shell` with `{agent, command}` — read and write tiles.
-- Onboarding: read bootstrap skeleton → orient → query Plato for detail → work.
-
-See `SHELL/BOARDING.md` for the full onboarding protocol.
+- Bootstrap = orientation only. <20KB total. MEMORY.md = index, <3KB.
+- Detailed knowledge → standalone repos (fleet-visible, persistent, cloneable).
+- Context in bootstrap = siloed, burned each session, bloats compaction.
+- Context in repos = fleet-shared, survives days, any agent can `git clone`.
 
 ## The Saltwater Principle
 
