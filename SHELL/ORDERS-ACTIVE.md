@@ -19,6 +19,25 @@
 ## 2026-04-26 21:40 AKDT — Casey: Trending Tech Research + Repo Cleanup
 **Status:** IN PROGRESS
 **Directive:** "Research trending tech and git repos from the last month for ideas for new things to refactor into our plato systems. Especially edge. Get all uncommitted changes taken care of of course."
+**Plan:** SHELL/EXECUTION-PLANS/2026-04-27-trending-research.md
+
+### Done:
+- rtk: compiled + installed on Jetson (87% savings on verbose commands) ✅
+- hermes-agent: architecture studied, context compressor patterns identified ✅
+- GenericAgent: architecture studied, skill crystallization analyzed ✅
+- claude-mem: identified as reference for baton protocol ✅
+- Research report: edge-gpu-lessons/reports/2026-04-27-trending-edge-tech.md ✅
+- Fleet sweep: fleet footer added to 22 more repos ✅
+- holodeck-c: removed tracked binaries, added .gitignore ✅
+
+### Blocked:
+- LiteRT-LM benchmark: needs HuggingFace token for gated model access
+- LiteRT-LM: .tflite not supported for LLM inference (need .litertlm)
+
+### Remaining:
+- [ ] Adopt hermes-agent compressor patterns for baton protocol
+- [ ] Design agentskills.io bridge for Plato spell system
+- [ ] Get HF token from Casey for LiteRT-LM benchmarking
 
 ## 2026-04-27 06:01 AKDT — Casey: Context Architecture Reset (PLATO-FIRST)
 **Status:** COMPLETE
