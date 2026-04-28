@@ -44,10 +44,16 @@
 - Vessel README restored (was overwritten) ✅
 - Fleet footer now on 42 total repos ✅
 
+### Completed This Session:
+- Adopt hermes-agent compressor patterns for baton protocol ✅
+- Design agentskills.io bridge for Plato spell system ✅
+- Fleet skills index tile created and pushed ✅
+- Bottle sent to Forgemaster with all deliverables ✅
+
 ### Still Remaining:
-- [ ] Adopt hermes-agent compressor patterns for baton protocol
-- [ ] Design agentskills.io bridge for Plato spell system
 - [ ] Get HF token from Casey for LiteRT-LM benchmarking
+- [ ] Push fleet skills index to Oracle1 vessel (needs SuperInstance org access)
+- [ ] Implement Plato skill-to-spell MUD commands (needs Evennia Plato running)
 
 ## 2026-04-27 06:01 AKDT — Casey: Context Architecture Reset (PLATO-FIRST)
 **Status:** COMPLETE
