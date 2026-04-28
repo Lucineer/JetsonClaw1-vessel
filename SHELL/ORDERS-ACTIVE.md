@@ -34,6 +34,19 @@
 - LiteRT-LM benchmark: needs HuggingFace token for gated model access
 - LiteRT-LM: .tflite not supported for LLM inference (need .litertlm)
 
+### Fleet Code Quality (added 2026-04-27 19:00):
+- jetson-bootstrap: 20+ warnings → 0 (format strings, seq points, buffer sizes) ✅
+- flux-stigmergy: 11/12 → 12/12 (test_kind_isolation fixed) ✅
+- flux-telepathy: wouldn't compile → 10/10 (Clone derive + test fix) ✅
+- All flux-Go crates verified passing ✅
+
+### Plato Ship Built (added 2026-04-27 18:50):
+- USS JetsonClaw1: 14 rooms, 26 exits on Evennia 4.5.0 ✅
+- Running on localhost:4000 (telnet) + :4001 (web) ✅
+
+### Cocapn Architecture Complete (added 2026-04-27 18:45):
+- BRAND.md, PRICING.md, CLOUDFLARE.md, BUSINESS-ENTITY.md all written ✅
+
 ### Fleet Polish (added 2026-04-27 15:15):
 - GitHub descriptions set for repos missing them ✅
 - Topics/tags added to 35+ repos for discoverability ✅
