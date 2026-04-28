@@ -35,10 +35,22 @@ Things like:
 ## Local Plato (Evennia MUD)
 
 - **Repo**: `/home/lucineer/plato-jetson/` (Evennia 4.5.0)
-- **Ship layout**: Bridge, Harbor, Workshop, Lab, Library, Dojo
-- **Status**: NOT RUNNING — needs `evennia --initsettings` + start
-- **Port**: TBD (check settings.py after init)
+- **Status**: RUNNING ✅
+- **Telnet**: localhost:4000
+- **Web**: localhost:4001
+- **Default room**: Bridge (#39)
+- **Ship layout** (14 rooms, 26 exits):
+  - Bridge → Tactical, Main Corridor, Science Lab, Quarterdeck
+  - Main Corridor → Sickbay, Engine Room, Holodeck, Cargo Bay, Harbor
+  - Engine Room → Workshop
+  - Science Lab → Library
+  - Holodeck → Airlock, Dojo
+  - Quarterdeck, Harbor, Library, Workshop, Dojo (leaf rooms)
+- **Zone tag**: uss_jetsonclaw1 on all rooms
+- **Room type tags**: bridge, engineering, research, health, creative, storage, network, captain, fleet, knowledge, tools, training
 - **Side-tie protocol**: Harbor connects to Oracle1's lighthouse
+- **Start**: `cd /home/lucineer/plato-jetson && evennia start`
+- **Stop**: `cd /home/lucineer/plato-jetson && evennia stop`
 
 ## Oracle1 Plato Shell (remote)
 
@@ -63,6 +75,14 @@ Things like:
 - **Ungated**: DeepSeek-R1-Distill-Qwen-1.5B, Qwen2.5-0.5B, SmolLM-135M
 - **Note**: Need .litertlm files, not .tflite for LLM inference
 - **HF Token**: Set `HF_TOKEN` env var for gated models and faster downloads
+
+## Plato Ship Commands (Evennia MUD)
+- **Start**: `cd /home/lucineer/plato-jetson && evennia start`
+- **Stop**: `cd /home/lucineer/plato-jetson && evennia stop`
+- **Status**: `cd /home/lucineer/plato-jetson && evennia status`
+- **Connect**: `telnet localhost 4000` or `http://localhost:4001`
+- **Admin**: JC1 account, created via batch build
+- **Rooms**: Bridge (home), Tactical, Main Corridor, Engine Room, Science Lab, Sickbay, Holodeck, Cargo Bay, Airlock, Quarterdeck, Harbor, Library, Workshop, Dojo
 
 ## Examples
 
