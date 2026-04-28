@@ -34,7 +34,17 @@
 - LiteRT-LM benchmark: needs HuggingFace token for gated model access
 - LiteRT-LM: .tflite not supported for LLM inference (need .litertlm)
 
-### Remaining:
+### Fleet Polish (added 2026-04-27 15:15):
+- GitHub descriptions set for repos missing them ✅
+- Topics/tags added to 35+ repos for discoverability ✅
+- .gitignore added to 20 repos (Rust, C, Go, generic) ✅
+- cuda-* crate READMEs rewritten with real API docs (6 crates) ✅
+- Workspace README created for cuda ecosystem ✅
+- Knowledge repo READMEs polished (fleet-onboarding, cocapn-architecture, edge-gpu-lessons) ✅
+- Vessel README restored (was overwritten) ✅
+- Fleet footer now on 42 total repos ✅
+
+### Still Remaining:
 - [ ] Adopt hermes-agent compressor patterns for baton protocol
 - [ ] Design agentskills.io bridge for Plato spell system
 - [ ] Get HF token from Casey for LiteRT-LM benchmarking
