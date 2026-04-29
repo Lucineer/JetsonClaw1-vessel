@@ -395,6 +395,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
 def main():
     global API_KEY
     port = DEFAULT_PORT
+    host = DEFAULT_HOST
 
     i = 1
     while i < len(sys.argv):
@@ -403,6 +404,9 @@ def main():
             i += 2
         elif sys.argv[i] == "--api-key" and i + 1 < len(sys.argv):
             API_KEY = sys.argv[i + 1]
+            i += 2
+        elif sys.argv[i] == "--host" and i + 1 < len(sys.argv):
+            host = sys.argv[i + 1]
             i += 2
         else:
             i += 1
