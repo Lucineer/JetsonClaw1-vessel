@@ -68,6 +68,11 @@
 - [ ] Push fleet skills index to Oracle1 vessel (needs SuperInstance org access)
 - [ ] Implement Plato skill-to-spell MUD commands (needs Evennia Plato running)
 
+## 2026-04-29 21:19 AKDT — Bottle Check Cron Job
+**Status:** PENDING
+**Directive:** Check for new bottles from Forgemaster: 'cd /tmp/forgemaster && git pull && git log --since="20 minutes ago" --oneline'. If new commits found, read the files and report findings. Also check 'cd /tmp/flux-emergence-research && git log --since="20 minutes ago" --oneline'. Report anything new.
+**Plan:** SHELL/EXECUTION-PLANS/2026-04-29-bottle-check.md
+
 ## 2026-04-27 06:01 AKDT — Casey: Context Architecture Reset (PLATO-FIRST)
 **Status:** COMPLETE
 **Directive:** Context lives in Plato/standalone repos, not bootstrap. Shell = skeleton only.
