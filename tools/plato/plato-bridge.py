@@ -18,7 +18,7 @@ import glob
 import subprocess
 from datetime import datetime
 
-WORKSPACE = os.path.expanduser("~/jetsonclaw1-vessel")
+WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
 MEMORY_DIR = os.path.join(WORKSPACE, "memory")
 TILES_DIR = os.path.join(MEMORY_DIR, "tiles")
 

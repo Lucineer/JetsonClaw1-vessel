@@ -23,8 +23,8 @@ from collections import defaultdict
 from datetime import datetime
 
 
-TILES_DIR = os.path.expanduser("~/jetsonclaw1-vessel/memory/tiles")
-GRAPH_FILE = os.path.expanduser("~/jetsonclaw1-vessel/memory/tiles/_graph.json")
+TILES_DIR = os.path.expanduser("~/.openclaw/workspace/memory/tiles")
+GRAPH_FILE = os.path.expanduser("~/.openclaw/workspace/memory/tiles/_graph.json")
 
 
 def parse_frontmatter(content):

@@ -24,7 +24,7 @@ from datetime import datetime
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 
-SKILLS_DIR = os.path.expanduser("~/jetsonclaw1-vessel/memory/skills")
+SKILLS_DIR = os.path.expanduser("~/.openclaw/workspace/memory/skills")
 STATE_FILE = os.path.join(SKILLS_DIR, "_tree_state.json")
 
 
@@ -171,7 +171,7 @@ class SkillTree:
 
     def _read_tile(self, tile_id: str) -> str:
         """Read content from a Plato tile, stripping frontmatter."""
-        tiles_dir = os.path.expanduser("~/jetsonclaw1-vessel/memory/tiles")
+        tiles_dir = os.path.expanduser("~/.openclaw/workspace/memory/tiles")
         path = os.path.join(tiles_dir, tile_id if tile_id.endswith(".md") else f"{tile_id}.md")
         if os.path.exists(path):
             with open(path) as f:
