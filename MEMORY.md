@@ -29,6 +29,9 @@
 - **Three pillars**: deckboss (design), cocapn (operate), capitaine (evolve)
 - **Saltwater Principle**: distribute knowledge to 3+ fleet repos. No single point of failure.
 - Git-agent: the repo IS the agent. Fork → improve → share.
+- **Edge toolkit**: 13 tools in `tools/`, shared `edge/` package, OpenAI-compatible API
+- **Gateway endpoints**: chat, embeddings, RAG, models, stats, health, conversations, usage
+- **Storage**: SQLite-backed conversation history at `~/.openclaw/workspace/memory/edge-store.db`
 
 ## Where Things Live (query on demand)
 - API keys → openclaw.json (NEVER commit to git)
