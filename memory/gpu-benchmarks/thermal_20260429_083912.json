@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-04-29T08:39:12.604335",
+  "duration_s": 60,
+  "gpu_temp_before": null,
+  "gpu_temp_after": null,
+  "gpu_temp_max": 0,
+  "soc_temp_max": 0,
+  "samples": 12,
+  "power_mw": {
+    "VDD_IN": 8823,
+    "VDD_CPU_GPU_CV": 3531,
+    "VDD_SOC": 1907
+  }
+}

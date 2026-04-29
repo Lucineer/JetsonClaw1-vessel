@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-04-29T08:46:18.355382",
+  "duration_s": 30,
+  "model": "deepseek-r1:1.5b",
+  "peak_gpu_temp_c": 51.4,
+  "peak_power_mw": 0,
+  "peak_cpu_pct": 0,
+  "samples": 10,
+  "final_state": {
+    "ram_total_mb": 7619,
+    "ram_available_mb": 3035,
+    "swap_total_mb": 28385,
+    "swap_free_mb": 27256,
+    "cma_total_kb": 262144,
+    "cma_free_kb": 4068,
+    "cma_used_pct": 98.4,
+    "ram_used_mb": 4584,
+    "swap_used_mb": 1129,
+    "temp_gpu_c": 51.4,
+    "temp_cpu_c": 51.2,
+    "temp_tj_c": 51.3,
+    "timestamp": "2026-04-29T08:46:17.347946"
+  }
+}
