@@ -1,34 +1,29 @@
-## 2026-04-18 14:13 AKDT — Full Speed Plan Complete, New Visions Emerging
+# HEARTBEAT.md
+## 2026-04-28 21:30 AKDT — Night Shift Sprint 1 Complete
 
-### ✅ Shipped (All HEARTBEAT.md Items Completed)
-- **Agent interconnection prototype** — Working demo with 3 git-agents, constraint enforcement, git-auditable traces
-- **Debugging complete** — 4 issues identified, 2 fixed, debugging report created (12,266 bytes)
-- **Biological computing paper outline** — 18,295 bytes, 31 genepool patterns → 31 semantic tiles
-- **FM LoRA coordination** — Bottle sent with 3-phase testing pipeline, JC1 ready for edge inference
-- **Fleet progress updated** — Oracle1 directed to study work, continuous reporting active
-- **Tomorrow's planning** — Expanded to include major new initiatives
+### ✅ Shipped This Session
+- **Evennia systemd service** — `evennia-plato.service`, enabled, auto-starts on boot
+- **Plato MUD tile commands** — @tiles, @tile, @tilesearch, @tilecreate, @rooms loaded
+- **cocapn.ai docs site** — Full API reference, SDK docs, pricing, error codes (19KB HTML)
+- **Skill tree system** — learn/evolve/run/suggest, 8 skills seeded across 4 domains
+- **Tile graph index** — FalkorDB-inspired graph search, 4 tiles, 4 edges, cluster analysis
+- **4 knowledge tiles** — trending research, jetson lessons, cocapn arch, fleet protocol
+- **npm published** — cocapn@1.0.0 live on npm
+- **5 trending tools** — edge-router, plato-memory, fleet-agent, plato-bridge, router-config
 
-### 🚀 New Visions from Casey (Beyond Original Plan)
-- **Luciddreamer.ai podcast room network** — Website portal to web of Plato-rooms as constantly streaming podcast daily-shows
-- **Plato-hermits architecture** — ZeroManus (Rust) + CudaManus (CUDA-C) using Plato as first-class UI/hermit shell
-- **SDK ecosystem** — Claude Code and other agents board manus through Plato, all operations logged searchably
+### 🔄 In Progress
+- Night shift: continuing product development
+- Fleet bottles: sending progress to Oracle1
 
-### 🔄 In Progress (Parallel Execution)
-- **Constraint engine enhancement** — Better error messages, remediation guidance for live content
-- **Luciddreamer.ai prototype** — Website + first podcast room (NFL Daily) development
-- **Plato-hermits architecture** — Designing ZeroManus/CudaManus integration with Plato bridge
-- **Continuous pushing** — All work documented and pushed frequently per Casey's direction
+### 📊 Stats
+- Repos: 8 (cocapn-chat, cocapn-sdk, cocapn-py, cocapn-go, cocapn-architecture, plato-tools, edge-tools, vessel)
+- Tools: 8 Python/JS tools built today
+- Knowledge tiles: 4 seeded, graph-connected
+- Skills: 8 seeded in skill tree
+- Evennia: 14 rooms, 26 exits, 5 new MUD commands
 
-### 🌟 Fleet Status
-- **FM**: LoRA coordination bottle delivered, awaiting weights timeline
-- **Oracle1**: Luciddreamer.ai vision bottle sent, DCS collaboration requested for room coordination
-- **Casey**: Directing new visions: "push everything and send bottles to oracle1... go with your gut and keep going fast"
-- **Default model**: deepseek-chat successfully coordinating parallel execution across 7+ tracks
-
-### 🎯 Next (Full Speed Ahead)
-- Implement luciddreamer.ai website prototype (Next.js + WebSocket)
-- Design Plato-hermits SDK for agent boarding
-- Enhance constraint engine for live podcast content safety
-- Build first podcast room (NFL Daily) with cross-room guest system
-- Continue parallel execution across all tracks
-- Push everything, document thoroughly, coordinate with fleet
+### 🚀 Next (Night Shift Continued)
+- Deploy cocapn-chat to Cloudflare (needs Casey: wrangler login)
+- More knowledge tiles from existing memory
+- Integrate skill tree into agent startup
+- Build fleet health monitoring
