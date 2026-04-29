@@ -1,0 +1,60 @@
+{
+  "updated": "2026-04-29T00:25:11.253190",
+  "tasks": {
+    "fleet-health": {
+      "name": "fleet-health",
+      "command": "python3 ~/.openclaw/workspace/tools/fleet-health.py report",
+      "interval_min": 30,
+      "last_run": "",
+      "last_status": "",
+      "last_output": "",
+      "next_run": "2026-04-29T00:55:11.251472",
+      "enabled": true,
+      "created": "2026-04-29T00:25:11.251440"
+    },
+    "tile-graph-build": {
+      "name": "tile-graph-build",
+      "command": "python3 ~/.openclaw/workspace/tools/tile-graph.py build",
+      "interval_min": 60,
+      "last_run": "",
+      "last_status": "",
+      "last_output": "",
+      "next_run": "2026-04-29T01:25:11.251955",
+      "enabled": true,
+      "created": "2026-04-29T00:25:11.251948"
+    },
+    "git-push": {
+      "name": "git-push",
+      "command": "cd ~/.openclaw/workspace && git add -A && git commit -m 'cron: auto-push' --allow-empty && git push 2>&1",
+      "interval_min": 15,
+      "last_run": "",
+      "last_status": "",
+      "last_output": "",
+      "next_run": "2026-04-29T00:40:11.252356",
+      "enabled": true,
+      "created": "2026-04-29T00:25:11.252350"
+    },
+    "memory-compact": {
+      "name": "memory-compact",
+      "command": "cd ~/.openclaw/workspace && find memory/ -name '*.md' -size +100k -exec truncate -s 100k {} \\; 2>/dev/null; echo 'done'",
+      "interval_min": 120,
+      "last_run": "",
+      "last_status": "",
+      "last_output": "",
+      "next_run": "2026-04-29T02:25:11.252743",
+      "enabled": true,
+      "created": "2026-04-29T00:25:11.252737"
+    },
+    "evennia-check": {
+      "name": "evennia-check",
+      "command": "cd /home/lucineer/plato-jetson && ~/.local/bin/evennia status 2>&1 | head -3",
+      "interval_min": 10,
+      "last_run": "",
+      "last_status": "",
+      "last_output": "",
+      "next_run": "2026-04-29T00:35:11.253144",
+      "enabled": true,
+      "created": "2026-04-29T00:25:11.253138"
+    }
+  }
+}
