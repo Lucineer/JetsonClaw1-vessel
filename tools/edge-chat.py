@@ -228,9 +228,12 @@ class EdgeChatHandler(BaseHTTPRequestHandler):
 
             for line in resp:
                 decoded = line.decode().strip()
-                if not decoded or not decoded.startswith("data: "):
+                if not decoded:
                     continue
-                chunk = json.loads(decoded[6:])
+                try:
+                    chunk = json.loads(decoded)
+                except json.JSONDecodeError:
+                    continue
                 if "message" in chunk and "content" in chunk["message"]:
                     content = chunk["message"]["content"]
                     full_response += content
@@ -516,12 +519,12 @@ def main():
         print("⚠️  Cannot connect to Ollama. Make sure it's running: ollama serve")
 
     stats = get_system_stats()
-    print(f"⚡ Edge Chat starting on http://0.0.0.0:{port}")
+    print(f"⚡ Edge Chat starting on http://127.0.0.1:{port}")
     print(f"   GPU: {stats.get('gpu_temp', '?')}°C  CMA: {stats.get('cma_free_mb', '?')}/{stats.get('cma_total_mb', '?')}MB")
     print(f"   Default model: {DEFAULT_MODEL}")
     print(f"   Press Ctrl+C to stop")
 
-    server = HTTPServer(("0.0.0.0", port), EdgeChatHandler)
+    server = HTTPServer(("127.0.0.1", port), EdgeChatHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -5,12 +5,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=%i
-ExecStart=/usr/bin/python3 %h/.openclaw/workspace/tools/edge-chat.py --port 8080
+ExecStart=/usr/bin/python3 /home/lucineer/.openclaw/workspace/tools/edge-chat.py --port 8081
 Restart=on-failure
 RestartSec=5
-Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
-Environment=HOME=%h
+WorkingDirectory=/home/lucineer/.openclaw/workspace/tools
+Environment=PATH=/home/lucineer/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/home/lucineer
 
 [Install]
 WantedBy=default.target
