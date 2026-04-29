@@ -112,6 +112,10 @@ def route_request(text: str, prefer_quality: str = "medium") -> dict:
     if prefer_quality != "any":
         candidates = [m for m in candidates if quality_order.get(m.quality, 0) >= quality_order.get(prefer_quality, 0)]
     
+    if not candidates:
+        # Fallback to all candidates
+        candidates = [m for m in AVAILABLE_MODELS if m.task in ("chat", "embedding") and resource_check(m)]
+    
     # For code/reasoning tasks, prefer larger models
     if task in ("code", "reasoning"):
         candidates.sort(key=lambda m: (m.size_gb, m.tokens_per_sec), reverse=True)
