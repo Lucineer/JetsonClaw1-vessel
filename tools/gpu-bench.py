@@ -188,7 +188,6 @@ int main() {
     }
     cudaDeviceSynchronize();
     cudaEventRecord(stop);
-    cudaEventStop(stop);
     cudaEventSynchronize(stop);
 
     float ms = 0;
@@ -221,7 +220,6 @@ int main() {
     }
     cudaDeviceSynchronize();
     cudaEventRecord(stop);
-    cudaEventStop(stop);
     cudaEventSynchronize(stop);
 
     ms = 0;
@@ -261,21 +259,17 @@ int main() {
     results = {"timestamp": datetime.now().isoformat()}
     for line in out.split("\n"):
         if "VEC_ADD" in line:
-            parts = line.split(",")
             results["vec_add"] = {}
-            for part in parts:
-                if "bandwidth" in part:
-                    results["vec_add"]["bandwidth_gbs"] = float(part.split()[-2])
-                if "ms total" in part:
-                    results["vec_add"]["total_ms"] = float(part.split()[-2])
+            m = re.search(r'(\d+\.\d+)\s*ms total', line)
+            if m: results["vec_add"]["total_ms"] = float(m.group(1))
+            m = re.search(r'(\d+\.\d+)\s*GB/s', line)
+            if m: results["vec_add"]["bandwidth_gbs"] = float(m.group(1))
         elif "MATMUL" in line:
             results["matmul"] = {}
-            parts = line.split(",")
-            for part in parts:
-                if "GFLOPS" in part:
-                    results["matmul"]["gflops"] = float(part.split()[-1])
-                if "ms/iter" in part:
-                    results["matmul"]["ms_per_iter"] = float(part.split()[-2])
+            m = re.search(r'(\d+\.\d+)\s*GFLOPS', line)
+            if m: results["matmul"]["gflops"] = float(m.group(1))
+            m = re.search(r'(\d+\.\d+)\s*ms/iter', line)
+            if m: results["matmul"]["ms_per_iter"] = float(m.group(1))
 
     print(f"  ✅ CUDA benchmark complete")
     return results

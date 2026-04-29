@@ -1,0 +1,4 @@
+{
+  "error": "Compilation failed",
+  "output": "/tmp/gpu_bench.cu(51): error: identifier \"cudaEventStop\" is undefined\n      cudaEventStop(stop);\n      ^\n\n1 error detected in the compilation of \"/tmp/gpu_bench.cu\".\n"
+}

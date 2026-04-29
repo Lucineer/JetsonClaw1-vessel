@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-04-29T01:35:29.992417",
+  "vec_add": {
+    "total_ms": 101.0,
+    "bandwidth_gbs": 0.5
+  },
+  "matmul": {
+    "gflops": 3.17,
+    "ms_per_iter": 1.7
+  }
+}

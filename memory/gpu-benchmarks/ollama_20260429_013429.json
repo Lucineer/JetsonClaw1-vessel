@@ -1,0 +1,67 @@
+{
+  "timestamp": "2026-04-29T01:34:29.476479",
+  "device": "Jetson Orin Nano 8GB",
+  "ollama_version": "0.18.2",
+  "results": [
+    {
+      "model": "nomic-embed-text:latest",
+      "elapsed_s": 0.15,
+      "output_chars": 9515,
+      "est_tokens": 2378,
+      "tokens_per_sec": 15922.1,
+      "ram_used_mb": 3966,
+      "ram_available_mb": 3653,
+      "cma_free_mb": 15
+    },
+    {
+      "model": "kwangsuklee/Qwen3.5-4B.Q4_K_M-Claude-4.6-Opus-Reasoning-Distilled-v2:latest",
+      "elapsed_s": 120.0,
+      "output_chars": 7,
+      "est_tokens": 1,
+      "tokens_per_sec": 0.0,
+      "ram_used_mb": 7311,
+      "ram_available_mb": 308,
+      "cma_free_mb": 2
+    },
+    {
+      "model": "deepseek-r1:1.5b",
+      "elapsed_s": 25.54,
+      "output_chars": 6269,
+      "est_tokens": 1567,
+      "tokens_per_sec": 61.3,
+      "ram_used_mb": 4326,
+      "ram_available_mb": 3293,
+      "cma_free_mb": 12
+    },
+    {
+      "model": "moondream:latest",
+      "elapsed_s": 2.54,
+      "output_chars": 809,
+      "est_tokens": 202,
+      "tokens_per_sec": 79.5,
+      "ram_used_mb": 6396,
+      "ram_available_mb": 1223,
+      "cma_free_mb": 0
+    },
+    {
+      "model": "nemotron-3-nano:4b",
+      "elapsed_s": 120.0,
+      "output_chars": 7,
+      "est_tokens": 1,
+      "tokens_per_sec": 0.0,
+      "ram_used_mb": 7415,
+      "ram_available_mb": 204,
+      "cma_free_mb": 2
+    },
+    {
+      "model": "qwen3.5:2b",
+      "elapsed_s": 120.0,
+      "output_chars": 7,
+      "est_tokens": 1,
+      "tokens_per_sec": 0.0,
+      "ram_used_mb": 6644,
+      "ram_available_mb": 975,
+      "cma_free_mb": 0
+    }
+  ]
+}
