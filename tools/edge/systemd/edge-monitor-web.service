@@ -1,0 +1,21 @@
+[Unit]
+Description=JC1 Edge AI Monitor Dashboard (Web UI)
+After=network-online.target edge-gateway.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/lucineer/.openclaw/workspace/tools/edge-monitor-web.py --port 8082 --host 127.0.0.1
+Restart=on-failure
+RestartSec=5
+WorkingDirectory=/home/lucineer/.openclaw/workspace/tools
+Environment=PATH=/home/lucineer/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/home/lucineer
+
+# Security
+NoNewPrivileges=yes
+ProtectSystem=full
+ReadWritePaths=/home/lucineer/.openclaw/workspace
+
+[Install]
+WantedBy=default.target
