@@ -1,0 +1,446 @@
+#!/usr/bin/env python3
+"""
+edge-gateway.py — Unified edge AI gateway for Jetson Orin Nano.
+
+Single server that exposes:
+  POST /v1/chat/completions     — OpenAI-compatible chat
+  POST /v1/embeddings           — OpenAI-compatible embeddings
+  POST /v1/rag/query            — RAG: search + generate
+  GET  /v1/models               — List available models
+  GET  /v1/stats                — System stats (GPU, RAM, CMA)
+  GET  /v1/health               — Health check
+
+Compatible with OpenAI SDK, LangChain, and any OpenAI-compatible client.
+No cloud APIs — everything runs on-device via Ollama.
+
+Usage:
+  python3 edge-gateway.py                    # Start on port 11435
+  python3 edge-gateway.py --port 8080        # Custom port
+  python3 edge-gateway.py --api-key secret   # Require API key
+
+Test with OpenAI SDK:
+  from openai import OpenAI
+  client = OpenAI(base_url="http://jetson:11435/v1", api_key="local")
+  resp = client.chat.completions.create(model="deepseek-r1:1.5b", messages=[{"role":"user","content":"Hi"}])
+"""
+
+import json
+import os
+import sys
+import time
+import math
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.request import urlopen, Request
+from urllib.error import URLError
+from datetime import datetime
+
+OLLAMA_URL = "http://localhost:11434"
+WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
+RAG_DIR = os.path.join(WORKSPACE, "memory", "rag-index")
+
+# Server config
+DEFAULT_PORT = 11435
+API_KEY = None  # Set via --api-key
+REQUEST_LOG = []
+
+# Track usage
+usage_stats = {
+    "start_time": datetime.now().isoformat(),
+    "total_requests": 0,
+    "chat_requests": 0,
+    "embed_requests": 0,
+    "rag_requests": 0,
+    "total_prompt_tokens": 0,
+    "total_completion_tokens": 0,
+    "errors": 0,
+}
+
+
+def ollama_request(endpoint, data=None, stream=False):
+    """Proxy request to Ollama."""
+    url = f"{OLLAMA_URL}{endpoint}"
+    headers = {"Content-Type": "application/json"}
+    req = Request(url, data=json.dumps(data).encode() if data else None,
+                  headers=headers, method="POST" if data else "GET")
+    try:
+        resp = urlopen(req, timeout=600)
+        if stream:
+            return resp
+        return json.loads(resp.read().decode())
+    except URLError as e:
+        return {"error": str(e)}
+
+
+def get_stats():
+    """System stats from thermal zones + proc."""
+    stats = {"device": "Jetson Orin Nano 8GB", "timestamp": time.time()}
+
+    # Thermal zones
+    try:
+        import glob as g
+        for tz_path in sorted(g.glob("/sys/class/thermal/thermal_zone*")):
+            with open(os.path.join(tz_path, "type"), "rb") as f:
+                raw = f.read()
+            if not raw:
+                continue
+            name = raw.decode().strip()
+            with open(os.path.join(tz_path, "temp"), "rb") as f:
+                raw = f.read()
+            if not raw:
+                continue
+            val = raw.decode().strip()
+            if val and val != "0":
+                temp = round(int(val) / 1000.0, 1)
+                if "gpu" in name:
+                    stats["gpu_temp_c"] = temp
+                elif "cpu" in name:
+                    stats["cpu_temp_c"] = temp
+                elif "tj" in name:
+                    stats["soc_temp_c"] = temp
+    except Exception:
+        pass
+
+    # Memory
+    try:
+        with open("/proc/meminfo", "rb") as f:
+            raw = f.read().decode()
+        for line in raw.split("\n"):
+            parts = line.split(":")
+            if len(parts) != 2:
+                continue
+            key = parts[0].strip()
+            val_kb = int(parts[1].strip().split()[0])
+            if key == "MemTotal":
+                stats["ram_total_mb"] = val_kb // 1024
+            elif key == "MemAvailable":
+                stats["ram_available_mb"] = val_kb // 1024
+            elif "CmaTotal" in key:
+                stats["cma_total_mb"] = val_kb // 1024
+            elif "CmaFree" in key:
+                stats["cma_free_mb"] = val_kb // 1024
+    except Exception:
+        pass
+
+    stats["uptime_s"] = time.time() - (datetime.fromisoformat(usage_stats["start_time"]).timestamp())
+    stats["usage"] = {
+        k: v for k, v in usage_stats.items() if k != "start_time"
+    }
+    return stats
+
+
+def cosine_sim(a, b):
+    dot = sum(x * y for x, y in zip(a, b))
+    na = math.sqrt(sum(x * x for x in a))
+    nb = math.sqrt(sum(x * x for x in b))
+    return dot / (na * nb) if na > 0 and nb > 0 else 0.0
+
+
+def rag_search(query, index_name="fleet-knowledge", top_k=5):
+    """Search RAG index."""
+    path = os.path.join(RAG_DIR, f"{index_name}.json")
+    if not os.path.exists(path):
+        return []
+    with open(path) as f:
+        index = json.load(f)
+    q_embed = ollama_request("/api/embed", {"model": "nomic-embed-text", "input": query})
+    q_vec = q_embed.get("embeddings", [[]])[0]
+    if not q_vec:
+        return []
+    scored = []
+    for chunk in index.get("chunks", []):
+        if "embedding" not in chunk:
+            continue
+        s = cosine_sim(q_vec, chunk["embedding"])
+        scored.append((chunk, s))
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return scored[:top_k]
+
+
+class GatewayHandler(BaseHTTPRequestHandler):
+    """OpenAI-compatible edge AI gateway."""
+
+    def _json(self, data, status=200):
+        body = json.dumps(data).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _stream_sse(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.end_headers()
+
+    def do_GET(self):
+        usage_stats["total_requests"] += 1
+
+        if self.path == "/v1/models":
+            resp = ollama_request("/api/tags")
+            models = resp.get("models", [])
+            self._json({
+                "object": "list",
+                "data": [{"id": m["name"], "object": "model", "owned_by": "local",
+                          "size": m.get("size", 0)} for m in models]
+            })
+
+        elif self.path == "/v1/stats":
+            self._json(get_stats())
+
+        elif self.path == "/v1/health":
+            resp = ollama_request("/api/tags")
+            healthy = "error" not in resp
+            self._json({"status": "ok" if healthy else "degraded",
+                        "ollama": "connected" if healthy else "disconnected",
+                        "device": "Jetson Orin Nano 8GB"})
+
+        else:
+            self._json({"error": {"message": "Not found", "type": "not_found"}}, 404)
+
+    def do_POST(self):
+        usage_stats["total_requests"] += 1
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length).decode()) if length else {}
+
+        # Auth check
+        if API_KEY:
+            auth = self.headers.get("Authorization", "")
+            if auth != f"Bearer {API_KEY}":
+                self._json({"error": {"message": "Invalid API key", "type": "auth_error"}}, 401)
+                usage_stats["errors"] += 1
+                return
+
+        if self.path == "/v1/chat/completions":
+            self._handle_chat(body)
+        elif self.path == "/v1/embeddings":
+            self._handle_embeddings(body)
+        elif self.path == "/v1/rag/query":
+            self._handle_rag(body)
+        else:
+            self._json({"error": {"message": "Not found", "type": "not_found"}}, 404)
+
+    def _handle_chat(self, body):
+        """OpenAI-compatible chat completions."""
+        model = body.get("model", "deepseek-r1:1.5b")
+        messages = body.get("messages", [])
+        stream = body.get("stream", False)
+
+        if not messages:
+            self._json({"error": {"message": "No messages", "type": "invalid_request"}}, 400)
+            return
+
+        usage_stats["chat_requests"] += 1
+
+        # Convert OpenAI format to Ollama
+        ollama_messages = []
+        system_msg = None
+        for m in messages:
+            if m["role"] == "system":
+                system_msg = m["content"]
+            else:
+                ollama_messages.append(m)
+
+        ollama_data = {
+            "model": model,
+            "messages": ollama_messages,
+            "stream": stream,
+        }
+        if system_msg:
+            ollama_data["system"] = system_msg
+
+        if stream:
+            self._stream_chat(ollama_data, model)
+        else:
+            resp = ollama_request("/api/chat", ollama_data)
+            if "error" in resp:
+                usage_stats["errors"] += 1
+                self._json({"error": {"message": resp["error"]}}, 502)
+                return
+
+            prompt_tokens = resp.get("prompt_eval_count", 0)
+            completion_tokens = resp.get("eval_count", 0)
+            usage_stats["total_prompt_tokens"] += prompt_tokens
+            usage_stats["total_completion_tokens"] += completion_tokens
+
+            self._json({
+                "id": f"chatcmpl-{int(time.time()*1000)}",
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": model,
+                "choices": [{
+                    "index": 0,
+                    "message": {"role": "assistant", "content": resp.get("message", {}).get("content", "")},
+                    "finish_reason": "stop",
+                }],
+                "usage": {
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": prompt_tokens + completion_tokens,
+                },
+            })
+
+    def _stream_chat(self, ollama_data, model):
+        """Stream chat in OpenAI SSE format."""
+        self._stream_sse()
+        req = Request(f"{OLLAMA_URL}/api/chat",
+                      data=json.dumps(ollama_data).encode(),
+                      headers={"Content-Type": "application/json"})
+        try:
+            resp = urlopen(req, timeout=600)
+            for line in resp:
+                decoded = line.decode().strip()
+                if not decoded.startswith("data: "):
+                    continue
+                chunk = json.loads(decoded[6:])
+                content = chunk.get("message", {}).get("content", "")
+                if content:
+                    self.wfile.write(f"data: {json.dumps({'id':'chatcmpl-'+str(int(time.time()*1000)),'object':'chat.completion.chunk','created':int(time.time()),'model':model,'choices':[{'index':0,'delta':{'content':content},'finish_reason':None}]})}\n\n".encode())
+                    self.wfile.flush()
+                if chunk.get("done"):
+                    usage_stats["total_prompt_tokens"] += chunk.get("prompt_eval_count", 0)
+                    usage_stats["total_completion_tokens"] += chunk.get("eval_count", 0)
+                    self.wfile.write(b"data: [DONE]\n\n")
+                    self.wfile.flush()
+                    break
+        except Exception as e:
+            usage_stats["errors"] += 1
+            self.wfile.write(f"data: {json.dumps({'error': str(e)})}\n\n".encode())
+            self.wfile.flush()
+
+    def _handle_embeddings(self, body):
+        """OpenAI-compatible embeddings."""
+        model = body.get("model", "nomic-embed-text")
+        input_data = body.get("input", [])
+        if isinstance(input_data, str):
+            input_data = [input_data]
+
+        usage_stats["embed_requests"] += 1
+
+        resp = ollama_request("/api/embed", {"model": model, "input": input_data})
+        if "error" in resp:
+            usage_stats["errors"] += 1
+            self._json({"error": {"message": resp["error"]}}, 502)
+            return
+
+        embeddings = resp.get("embeddings", [])
+        total_tokens = sum(len(t.split()) for t in input_data)
+        usage_stats["total_prompt_tokens"] += total_tokens
+
+        self._json({
+            "object": "list",
+            "data": [{"object": "embedding", "embedding": emb, "index": i}
+                     for i, emb in enumerate(embeddings)],
+            "model": model,
+            "usage": {"prompt_tokens": total_tokens, "total_tokens": total_tokens},
+        })
+
+    def _handle_rag(self, body):
+        """RAG query: search + generate."""
+        query = body.get("query", "")
+        model = body.get("model", "deepseek-r1:1.5b")
+        index = body.get("index", "fleet-knowledge")
+        top_k = body.get("top_k", 5)
+
+        if not query:
+            self._json({"error": {"message": "No query provided"}}, 400)
+            return
+
+        usage_stats["rag_requests"] += 1
+
+        start = time.time()
+        results = rag_search(query, index, top_k)
+
+        if not results:
+            self._json({"answer": "No relevant documents found.", "sources": [], "elapsed_s": 0})
+            return
+
+        # Build context from relevant chunks
+        context = "\n\n".join(
+            f"[{c['source']}]: {c['text']}" for c, s in results if s > 0.2
+        )
+        sources = [{"source": c["source"], "score": round(s, 3), "text": c["text"][:200]}
+                   for c, s in results]
+
+        prompt = f"Based on the following context, answer the question concisely.\n\nContext:\n{context}\n\nQuestion: {query}\n\nAnswer:"
+
+        gen_resp = ollama_request("/api/generate", {
+            "model": model, "prompt": prompt, "stream": False,
+            "system": "Answer based only on provided context. Be concise."
+        })
+
+        answer = gen_resp.get("response", "Error generating response")
+        elapsed = time.time() - start
+
+        tokens = gen_resp.get("eval_count", 0)
+        usage_stats["total_completion_tokens"] += tokens
+
+        self._json({
+            "answer": answer,
+            "sources": sources,
+            "elapsed_s": round(elapsed, 2),
+            "model": model,
+            "tokens": tokens,
+        })
+
+    def log_message(self, fmt, *args):
+        pass  # Suppress access logs
+
+
+def main():
+    global API_KEY
+    port = DEFAULT_PORT
+
+    i = 1
+    while i < len(sys.argv):
+        if sys.argv[i] == "--port" and i + 1 < len(sys.argv):
+            port = int(sys.argv[i + 1])
+            i += 2
+        elif sys.argv[i] == "--api-key" and i + 1 < len(sys.argv):
+            API_KEY = sys.argv[i + 1]
+            i += 2
+        else:
+            i += 1
+
+    # Health check Ollama
+    resp = ollama_request("/api/tags")
+    if "error" in resp:
+        print(f"⚠️  Ollama not available: {resp['error']}")
+        print("   Start with: ollama serve")
+    else:
+        models = resp.get("models", [])
+        print(f"✅ Ollama connected — {len(models)} models")
+
+    stats = get_stats()
+    print(f"⚡ Edge Gateway starting on http://0.0.0.0:{port}")
+    print(f"   GPU: {stats.get('gpu_temp_c', '?')}°C  RAM: {stats.get('ram_available_mb', '?')}MB  CMA: {stats.get('cma_free_mb', '?')}/{stats.get('cma_total_mb', '?')}MB")
+    if API_KEY:
+        print(f"   API key required")
+    print(f"   Endpoints:")
+    print(f"     POST /v1/chat/completions  — OpenAI-compatible chat")
+    print(f"     POST /v1/embeddings        — OpenAI-compatible embeddings")
+    print(f"     POST /v1/rag/query         — RAG: search + generate")
+    print(f"     GET  /v1/models             — List models")
+    print(f"     GET  /v1/stats              — System stats")
+    print(f"     GET  /v1/health             — Health check")
+
+    server = HTTPServer(("0.0.0.0", port), GatewayHandler)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n👋 Stopping edge gateway")
+        server.shutdown()
+
+
+if __name__ == "__main__":
+    main()
