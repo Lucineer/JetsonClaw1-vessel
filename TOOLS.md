@@ -76,6 +76,15 @@ Things like:
 - **Note**: Need .litertlm files, not .tflite for LLM inference
 - **HF Token**: Set `HF_TOKEN` env var for gated models and faster downloads
 
+## Edge Toolkit (Jetson AI)
+
+- **Gateway**: `python3 tools/edge-gateway.py` (port 11435, OpenAI-compatible)
+- **Chat UI**: `python3 tools/edge-chat.py` (port 8080, web UI)
+- **RAG**: `python3 tools/edge-rag.py serve` (port 8081)
+- **Setup wizard**: `python3 tools/edge-setup.py --detect|install|validate`
+- **Shared modules**: `tools/edge/` (config, ollama_client, monitoring, storage, similarity)
+- **API endpoints**: /v1/chat/completions, /v1/embeddings, /v1/rag/query, /v1/models, /v1/stats, /v1/health, /v1/conversations, /v1/usage
+
 ## Plato Ship Commands (Evennia MUD)
 - **Start**: `cd /home/lucineer/plato-jetson && evennia start`
 - **Stop**: `cd /home/lucineer/plato-jetson && evennia stop`
