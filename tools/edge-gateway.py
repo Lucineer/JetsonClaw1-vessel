@@ -45,6 +45,7 @@ from edge.config import (
 from edge.ollama_client import ollama_request, ollama_chat, ollama_embed, check_api_key
 from edge.similarity import rank_results
 from edge.monitoring import get_snapshot
+from edge.storage import EdgeStore
 
 # Server config
 DEFAULT_PORT = 11435
@@ -52,6 +53,7 @@ DEFAULT_HOST = "127.0.0.1"  # Secure default
 API_KEY = None  # Set via --api-key
 REQUEST_LOG = []
 _stats_lock = Lock()
+store = EdgeStore()  # Persistent storage
 
 # Track usage
 usage_stats = {
@@ -174,6 +176,12 @@ class GatewayHandler(BaseHTTPRequestHandler):
                         "ollama": "connected" if healthy else "disconnected",
                         "device": "Jetson Orin Nano 8GB"})
 
+        elif self.path.startswith("/v1/conversations"):
+            self._handle_conversations_get()
+
+        elif self.path.startswith("/v1/usage"):
+            self._handle_usage_get()
+
         else:
             self._json({"error": {"message": "Not found", "type": "not_found"}}, 404)
 
@@ -208,6 +216,8 @@ class GatewayHandler(BaseHTTPRequestHandler):
             self._handle_embeddings(body)
         elif self.path == "/v1/rag/query":
             self._handle_rag(body)
+        elif self.path.startswith("/v1/conversations"):
+            self._handle_conversations_post(body)
         else:
             self._json({"error": {"message": "Not found", "type": "not_found"}}, 404)
 
@@ -253,6 +263,14 @@ class GatewayHandler(BaseHTTPRequestHandler):
             completion_tokens = resp.get("eval_count", 0)
             usage_stats["total_prompt_tokens"] += prompt_tokens
             usage_stats["total_completion_tokens"] += completion_tokens
+            store.log_usage(model, "/v1/chat/completions", prompt_tokens, completion_tokens)
+
+            # Auto-save to conversation if conv_id provided
+            conv_id = body.get("conversation_id")
+            if conv_id:
+                store.add_message(conv_id, "assistant",
+                    resp.get("message", {}).get("content", ""),
+                    prompt_tokens, completion_tokens)
 
             self._json({
                 "id": f"chatcmpl-{int(time.time()*1000)}",
@@ -390,6 +408,73 @@ class GatewayHandler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         pass  # Suppress access logs
+
+    def _handle_conversations_get(self):
+        """GET /v1/conversations — list conversations, or /v1/conversations/:id — get one."""
+        parts = self.path.rstrip("/").split("/")
+        if len(parts) >= 4:
+            # Get specific conversation
+            conv_id = parts[3]
+            conv = store.get_conversation(conv_id)
+            if conv:
+                self._json(conv)
+            else:
+                self._json({"error": {"message": "Conversation not found", "type": "not_found"}}, 404)
+        else:
+            # List conversations
+            from urllib.parse import urlparse, parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            limit = int(qs.get("limit", [20])[0])
+            offset = int(qs.get("offset", [0])[0])
+            convs = store.list_conversations(limit, offset)
+            self._json({"object": "list", "data": convs, "total": len(convs)})
+
+    def _handle_conversations_post(self, body):
+        """POST /v1/conversations — create, or /v1/conversations/:id/messages — add message."""
+        parts = self.path.rstrip("/").split("/")
+        if len(parts) >= 5 and parts[4] == "messages":
+            # Add message to conversation
+            conv_id = parts[3]
+            role = body.get("role", "user")
+            content = body.get("content", "")
+            if not content:
+                self._json({"error": {"message": "No content", "type": "invalid_request"}}, 400)
+                return
+            store.add_message(conv_id, role, content,
+                              body.get("tokens_prompt", 0),
+                              body.get("tokens_completion", 0))
+            self._json({"status": "ok", "conversation_id": conv_id})
+        elif len(parts) >= 4 and parts[3] == "search":
+            # Search conversations
+            query = body.get("query", "")
+            results = store.search_conversations(query, body.get("limit", 10))
+            self._json({"results": results})
+        else:
+            # Create new conversation
+            model = body.get("model", "unknown")
+            title = body.get("title")
+            conv_id = store.create_conversation(model=model, title=title)
+            self._json({"id": conv_id, "model": model}, 201)
+
+    def _handle_usage_get(self):
+        """GET /v1/usage — aggregated usage stats."""
+        stats = store.get_usage_stats()
+        self._json({"object": "list", "data": stats})
+
+    def do_DELETE(self):
+        with _stats_lock:
+            usage_stats["total_requests"] += 1
+        if API_KEY:
+            auth = self.headers.get("Authorization", "")
+            if not check_api_key(auth, API_KEY):
+                self._json({"error": {"message": "Invalid API key", "type": "auth_error"}}, 401)
+                return
+        parts = self.path.rstrip("/").split("/")
+        if len(parts) >= 4 and parts[3]:
+            store.delete_conversation(parts[3])
+            self._json({"status": "ok"})
+        else:
+            self._json({"error": {"message": "Not found", "type": "not_found"}}, 404)
 
 
 def main():
