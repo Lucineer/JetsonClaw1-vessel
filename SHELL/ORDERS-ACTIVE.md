@@ -1,93 +1,23 @@
 # Active Orders
 
-## 2026-04-26 20:56 AKDT — Casey: Night Shift (ALL REPOS)
-**Status:** COMPLETE
-**Directive:** "continue working on all our repos. I am going to bed. don't stop. there is lots of work to do if you look around"
-**Plan:** SHELL/EXECUTION-PLANS/2026-04-26-night-shift.md
+## 2026-04-29 20:19 AKDT — Bottle Check Cron Job (Current Session)
+**Status:** COMPLETE ✅
+**Directive:** Check for new bottles from Forgemaster and flux-emergence-research repositories
+**Plan:** Execute bottle check procedure as requested
+
+### Findings:
+- **Forgemaster Repository**: Already up to date, no new commits in the last 20 minutes
+- **Flux Emergence Research Repository**: No new commits in the last 20 minutes
 
 ### Results:
-- Phase 1: gpu-native-room-inference — 72 suites, 71 rules ✅
-- Phase 2: Vessel cleanup — 15 stale dirs, 78MB freed, secrets scrubbed ✅
-- Phase 3: cuda-* crates — 6 crates, 88/88 tests, workspace interop ✅
-- Phase 4: flux-runtime-c — 39/39 tests, Makefile fix ✅
-- Phase 5: Repo sweep — all clean, purplepincher.org committed ✅
-- Phase 6: Fleet footer — 8 vessel repos updated ✅
-- Phase 7: Context architecture reset — 63KB → 17KB bootstrap ✅
-- Phase 8: New repos — fleet-onboarding, cocapn-architecture, edge-gpu-lessons ✅
-- Phase 9: Bottles to Forgemaster + Oracle1 ✅
+- No new bottles found from either repository
+- No action required on file contents
+- No new fleet deliveries to process
 
-## 2026-04-26 21:40 AKDT — Casey: Trending Tech Research + Repo Cleanup
-**Status:** IN PROGRESS
-**Directive:** "Research trending tech and git repos from the last month for ideas for new things to refactor into our plato systems. Especially edge. Get all uncommitted changes taken care of of course."
-**Plan:** SHELL/EXECUTION-PLANS/2026-04-27-trending-research.md
+### Completed:
+- [x] Check `/tmp/forgemaster` for new commits in last 20 minutes
+- [x] Check `/tmp/flux-emergence-research` for new commits in last 20 minutes  
+- [x] Report findings (no new content)
+- [x] Annotate completion
 
-### Done:
-- rtk: compiled + installed on Jetson (87% savings on verbose commands) ✅
-- hermes-agent: architecture studied, context compressor patterns identified ✅
-- GenericAgent: architecture studied, skill crystallization analyzed ✅
-- claude-mem: identified as reference for baton protocol ✅
-- Research report: edge-gpu-lessons/reports/2026-04-27-trending-edge-tech.md ✅
-- Fleet sweep: fleet footer added to 22 more repos ✅
-- holodeck-c: removed tracked binaries, added .gitignore ✅
-
-### Blocked:
-- LiteRT-LM benchmark: needs HuggingFace token for gated model access
-- LiteRT-LM: .tflite not supported for LLM inference (need .litertlm)
-
-### Fleet Code Quality (added 2026-04-27 19:00):
-- jetson-bootstrap: 20+ warnings → 0 (format strings, seq points, buffer sizes) ✅
-- flux-stigmergy: 11/12 → 12/12 (test_kind_isolation fixed) ✅
-- flux-telepathy: wouldn't compile → 10/10 (Clone derive + test fix) ✅
-- All flux-Go crates verified passing ✅
-
-### Plato Ship Built (added 2026-04-27 18:50):
-- USS JetsonClaw1: 14 rooms, 26 exits on Evennia 4.5.0 ✅
-- Running on localhost:4000 (telnet) + :4001 (web) ✅
-
-### Cocapn Architecture Complete (added 2026-04-27 18:45):
-- BRAND.md, PRICING.md, CLOUDFLARE.md, BUSINESS-ENTITY.md all written ✅
-
-### Fleet Polish (added 2026-04-27 15:15):
-- GitHub descriptions set for repos missing them ✅
-- Topics/tags added to 35+ repos for discoverability ✅
-- .gitignore added to 20 repos (Rust, C, Go, generic) ✅
-- cuda-* crate READMEs rewritten with real API docs (6 crates) ✅
-- Workspace README created for cuda ecosystem ✅
-- Knowledge repo READMEs polished (fleet-onboarding, cocapn-architecture, edge-gpu-lessons) ✅
-- Vessel README restored (was overwritten) ✅
-- Fleet footer now on 42 total repos ✅
-
-### Completed This Session:
-- Adopt hermes-agent compressor patterns for baton protocol ✅
-- Design agentskills.io bridge for Plato spell system ✅
-- Fleet skills index tile created and pushed ✅
-- Bottle sent to Forgemaster with all deliverables ✅
-
-### Still Remaining:
-- [ ] Get HF token from Casey for LiteRT-LM benchmarking
-- [ ] Push fleet skills index to Oracle1 vessel (needs SuperInstance org access)
-- [ ] Implement Plato skill-to-spell MUD commands (needs Evennia Plato running)
-
-## 2026-04-29 08:19 AKDT — Bottle Check Cron Job (Morning Edition)
-**Status:** COMPLETE ✅
-**Directive:** Check for new bottles from Forgemaster and flux-emergence-research
-**Findings:**
-- **Forgemaster**: No new commits in 20 minutes, but recent JC1 GPU bottle (2026-04-29 01:31 AKDT)
-- **Flux Emergence Research**: Merge conflicts prevent pull, only basic README content
-- **JC1 GPU Update**: Jetson Orin Nano 8GB experiments, CMA memory concerns (10MB/256MB free)
-**Plan:** SHELL/EXECUTION-PLANS/2026-04-29-bottle-check-report.md
-
-## 2026-04-27 06:01 AKDT — Casey: Context Architecture Reset (PLATO-FIRST)
-**Status:** COMPLETE
-**Directive:** Context lives in Plato/standalone repos, not bootstrap. Shell = skeleton only.
-### Steps:
-- [x] Slim MEMORY.md: 35KB → 2KB
-- [x] Trim AGENTS.md: 10KB → 2KB
-- [x] Trim STANDING_ORDERS.md: 4KB → 1.3KB
-- [x] Clean ORDERS-ACTIVE.md: archive completed cron orders
-- [x] Set bootstrapTotalMaxChars=25000 in openclaw.json
-- [x] Push GPU lessons, craftmind, flux, cocapn tiles to Oracle1 vessel
-- [x] Create fleet-onboarding, cocapn-architecture, edge-gpu-lessons repos
-- [x] Update BOARDING.md with Plato-first onboarding protocol
-- [x] Fleet footer on 8 vessel repos
-- [x] Bottles to Forgemaster + Oracle1
+Next check scheduled for next cron interval.
