@@ -94,12 +94,18 @@ def read_thermal_zones():
     temps = {}
     for tz_path in sorted(glob.glob('/sys/class/thermal/thermal_zone*')):
         try:
-            with open(os.path.join(tz_path, 'type')) as f:
-                name = f.read().strip()
+            temp_raw = ""
+            with open(os.path.join(tz_path, 'type'), 'rb') as f:
+                raw = f.read()
+            if not raw:
+                continue
+            name = raw.decode().strip()
+
             with open(os.path.join(tz_path, 'temp'), 'rb') as f:
                 raw = f.read()
-            if raw:
-                temp_raw = raw.decode().strip()
+            if not raw:
+                continue
+            temp_raw = raw.decode().strip()
             if temp_raw and temp_raw != '0':
                 temps[name] = round(int(temp_raw) / 1000.0, 1)
         except (OSError, ValueError):

@@ -1,0 +1,22 @@
+generation:
+  id: 2
+  timestamp: "2026-04-25T07:21:00-08:00"
+  agent: JetsonClaw1 (JC1)
+  model: zai/glm-5-turbo
+  context:
+    used_percent: 107
+    trigger: "user-requested (offload context)"
+  workspace:
+    branch: main
+    uncommitted_files: 4
+    recent_commits: 8
+  performance:
+    tokens_used_estimate: 45000
+    duration_minutes: 55
+  handoff:
+    status: "complete"
+    files_written:
+      - .baton/generations/v2/ONBOARDING.md
+      - .baton/generations/v2/STATE.md
+      - .baton/generations/v2/DECISIONS.md
+      - .baton/generations/v2/TASKS_NEXT.md

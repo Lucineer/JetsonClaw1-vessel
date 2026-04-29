@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/lucineer/.openclaw/workspace/plato-harvest/plato_harvest_server.py", line 1, in <module>
+    class PlatoHarvestServer:
+  File "/home/lucineer/.openclaw/workspace/plato-harvest/plato_harvest_server.py", line 185, in PlatoHarvestServer
+    def _identify_knowledge_gaps(self) -> List[dict]:
+NameError: name 'List' is not defined. Did you mean: 'list'?

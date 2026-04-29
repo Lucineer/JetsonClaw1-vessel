@@ -2,6 +2,15 @@
 
 All tools run on-device with no cloud dependencies.
 
+## Shared Modules (`edge/`)
+
+| Module | Purpose |
+|--------|---------|
+| `edge/config.py` | Shared config (OLLAMA_URL, paths, limits) |
+| `edge/ollama_client.py` | Ollama API client + API key auth |
+| `edge/monitoring.py` | Thermal, CMA, RAM reading |
+| `edge/similarity.py` | Cosine similarity, vector ranking |
+
 ## Quick Reference
 
 | Tool | Port | Purpose |

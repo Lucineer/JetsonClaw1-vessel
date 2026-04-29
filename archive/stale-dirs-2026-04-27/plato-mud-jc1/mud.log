@@ -1,0 +1,33 @@
+
+🚀 JC1 HARDWARE-INTEGRATED EDGE MUD SERVER
+==========================================
+⚡ Real Hardware Monitoring + Plato MUD
+🔧 Hardware ID: jetson_14249243
+📡 Server: http://0.0.0.0:4143
+🏗️ Rooms: 4 hardware-integrated rooms
+💾 Memory: 4437MB used
+🌡️ Temperature: 48°C
+
+🎮 Hardware-Integrated Features:
+  • Real-time hardware telemetry in every room
+  • Hardware-aware latency simulation
+  • Hardware-dependent interaction outcomes
+  • Constraint checking before agent connections
+  • Hardware event logging
+  • Edge-optimized for Jetson Orin Nano 8GB
+
+🧪 Test with:
+  curl http://localhost:4143/connect?agent=test
+  curl http://localhost:4143/hardware-telemetry
+  curl http://localhost:4143/move?agent=test&room=edge-training
+  curl http://localhost:4143/interact?agent=test&target=cuda-monitor
+  curl http://localhost:4143/stats
+
+ * Serving Flask app 'hardware_integrated_mud_server'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:4143
+ * Running on http://192.168.0.50:4143
+Press CTRL+C to quit
+127.0.0.1 - - [20/Apr/2026 11:21:38] "GET / HTTP/1.1" 200 -

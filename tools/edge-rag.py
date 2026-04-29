@@ -131,6 +131,7 @@ def index_documents(paths, index_name="default"):
             index = json.load(f)
 
     total_chunks = 0
+    skipped_files = 0
     for path in paths:
         # Resolve path
         if not os.path.isabs(path):
@@ -144,9 +145,15 @@ def index_documents(paths, index_name="default"):
                         files.append(os.path.join(root, fname))
             print(f"  📁 {path}: {len(files)} files found")
             for f in files:
+                file_hash = hashlib.md5(open(f, "rb").read()).hexdigest()[:8]
+                # Skip if file hasn't changed
+                if f in index["documents"] and index["documents"][f].get("hash") == file_hash:
+                    skipped_files += 1
+                    continue
+                # Remove old chunks from this file if re-indexing
+                index["chunks"] = [c for c in index["chunks"] if c.get("path") != f]
                 chunks = parse_file(f)
                 if chunks:
-                    file_hash = hashlib.md5(open(f, "rb").read()).hexdigest()[:8]
                     index["documents"][f] = {"hash": file_hash, "chunks": len(chunks), "indexed": datetime.now().isoformat()}
                     total_chunks += len(chunks)
                     for chunk in chunks:
@@ -154,9 +161,14 @@ def index_documents(paths, index_name="default"):
                         index["chunks"].append(chunk)
                     print(f"    ✅ {os.path.basename(f)}: {len(chunks)} chunks")
         elif os.path.isfile(path):
+            file_hash = hashlib.md5(open(path, "rb").read()).hexdigest()[:8]
+            if path in index["documents"] and index["documents"][path].get("hash") == file_hash:
+                skipped_files += 1
+                continue
+            # Remove old chunks from this file if re-indexing
+            index["chunks"] = [c for c in index["chunks"] if c.get("path") != path]
             chunks = parse_file(path)
             if chunks:
-                file_hash = hashlib.md5(open(path, "rb").read()).hexdigest()[:8]
                 index["documents"][path] = {"hash": file_hash, "chunks": len(chunks), "indexed": datetime.now().isoformat()}
                 total_chunks += len(chunks)
                 for chunk in chunks:
@@ -165,6 +177,9 @@ def index_documents(paths, index_name="default"):
                 print(f"  ✅ {os.path.basename(path)}: {len(chunks)} chunks")
         else:
             print(f"  ⚠️ Not found: {path}")
+
+    if skipped_files:
+        print(f"  ⏭️  Skipped {skipped_files} unchanged files")
 
     if total_chunks == 0:
         print("  No chunks to embed.")

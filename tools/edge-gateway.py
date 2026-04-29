@@ -30,19 +30,28 @@ import sys
 import time
 import math
 import threading
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 from datetime import datetime
+from threading import Lock
 
-OLLAMA_URL = "http://localhost:11434"
-WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
-RAG_DIR = os.path.join(WORKSPACE, "memory", "rag-index")
+# Import shared modules
+sys.path.insert(0, os.path.dirname(__file__))
+from edge.config import (
+    OLLAMA_URL, DEFAULT_MODEL, WORKSPACE, RAG_DIR,
+    MAX_REQUEST_BODY, RELEVANCE_THRESHOLD,
+)
+from edge.ollama_client import ollama_request, ollama_chat, ollama_embed, check_api_key
+from edge.similarity import rank_results
+from edge.monitoring import get_snapshot
 
 # Server config
 DEFAULT_PORT = 11435
+DEFAULT_HOST = "127.0.0.1"  # Secure default
 API_KEY = None  # Set via --api-key
 REQUEST_LOG = []
+_stats_lock = Lock()
 
 # Track usage
 usage_stats = {
@@ -57,8 +66,8 @@ usage_stats = {
 }
 
 
-def ollama_request(endpoint, data=None, stream=False):
-    """Proxy request to Ollama."""
+def _ollama_raw_request(endpoint, data=None, stream=False):
+    """Low-level Ollama proxy (supports streaming response objects)."""
     url = f"{OLLAMA_URL}{endpoint}"
     headers = {"Content-Type": "application/json"}
     req = Request(url, data=json.dumps(data).encode() if data else None,
@@ -73,88 +82,48 @@ def ollama_request(endpoint, data=None, stream=False):
 
 
 def get_stats():
-    """System stats from thermal zones + proc."""
-    stats = {"device": "Jetson Orin Nano 8GB", "timestamp": time.time()}
-
-    # Thermal zones
-    try:
-        import glob as g
-        for tz_path in sorted(g.glob("/sys/class/thermal/thermal_zone*")):
-            with open(os.path.join(tz_path, "type"), "rb") as f:
-                raw = f.read()
-            if not raw:
-                continue
-            name = raw.decode().strip()
-            with open(os.path.join(tz_path, "temp"), "rb") as f:
-                raw = f.read()
-            if not raw:
-                continue
-            val = raw.decode().strip()
-            if val and val != "0":
-                temp = round(int(val) / 1000.0, 1)
-                if "gpu" in name:
-                    stats["gpu_temp_c"] = temp
-                elif "cpu" in name:
-                    stats["cpu_temp_c"] = temp
-                elif "tj" in name:
-                    stats["soc_temp_c"] = temp
-    except Exception:
-        pass
-
-    # Memory
-    try:
-        with open("/proc/meminfo", "rb") as f:
-            raw = f.read().decode()
-        for line in raw.split("\n"):
-            parts = line.split(":")
-            if len(parts) != 2:
-                continue
-            key = parts[0].strip()
-            val_kb = int(parts[1].strip().split()[0])
-            if key == "MemTotal":
-                stats["ram_total_mb"] = val_kb // 1024
-            elif key == "MemAvailable":
-                stats["ram_available_mb"] = val_kb // 1024
-            elif "CmaTotal" in key:
-                stats["cma_total_mb"] = val_kb // 1024
-            elif "CmaFree" in key:
-                stats["cma_free_mb"] = val_kb // 1024
-    except Exception:
-        pass
-
-    stats["uptime_s"] = time.time() - (datetime.fromisoformat(usage_stats["start_time"]).timestamp())
-    stats["usage"] = {
+    """System stats using shared monitoring module."""
+    snap = get_snapshot()
+    snap["timestamp"] = time.time()
+    snap["uptime_s"] = time.time() - (datetime.fromisoformat(usage_stats["start_time"]).timestamp())
+    snap["usage"] = {
         k: v for k, v in usage_stats.items() if k != "start_time"
     }
-    return stats
+    return snap
 
 
-def cosine_sim(a, b):
-    dot = sum(x * y for x, y in zip(a, b))
-    na = math.sqrt(sum(x * x for x in a))
-    nb = math.sqrt(sum(x * x for x in b))
-    return dot / (na * nb) if na > 0 and nb > 0 else 0.0
+# RAG index cache (avoids reloading on every request)
+_rag_cache = {}
+_rag_cache_lock = Lock()
 
 
 def rag_search(query, index_name="fleet-knowledge", top_k=5):
-    """Search RAG index."""
+    """Search RAG index with caching."""
     path = os.path.join(RAG_DIR, f"{index_name}.json")
     if not os.path.exists(path):
         return []
-    with open(path) as f:
-        index = json.load(f)
-    q_embed = ollama_request("/api/embed", {"model": "nomic-embed-text", "input": query})
-    q_vec = q_embed.get("embeddings", [[]])[0]
+
+    # Check cache
+    with _rag_cache_lock:
+        mtime = os.path.getmtime(path)
+        if index_name in _rag_cache:
+            cached_mtime, cached_index = _rag_cache[index_name]
+            if cached_mtime == mtime:
+                index = cached_index
+            else:
+                with open(path) as f:
+                    index = json.load(f)
+                _rag_cache[index_name] = (mtime, index)
+        else:
+            with open(path) as f:
+                index = json.load(f)
+            _rag_cache[index_name] = (mtime, index)
+
+    q_vec = ollama_embed(query)
     if not q_vec:
         return []
-    scored = []
-    for chunk in index.get("chunks", []):
-        if "embedding" not in chunk:
-            continue
-        s = cosine_sim(q_vec, chunk["embedding"])
-        scored.append((chunk, s))
-    scored.sort(key=lambda x: x[1], reverse=True)
-    return scored[:top_k]
+
+    return rank_results(q_vec, index.get("chunks", []), top_k, RELEVANCE_THRESHOLD)
 
 
 class GatewayHandler(BaseHTTPRequestHandler):
@@ -209,16 +178,28 @@ class GatewayHandler(BaseHTTPRequestHandler):
             self._json({"error": {"message": "Not found", "type": "not_found"}}, 404)
 
     def do_POST(self):
-        usage_stats["total_requests"] += 1
+        with _stats_lock:
+            usage_stats["total_requests"] += 1
         length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length).decode()) if length else {}
 
-        # Auth check
+        # Body size limit
+        if length > MAX_REQUEST_BODY:
+            self._json({"error": {"message": "Request body too large", "type": "invalid_request"}}, 413)
+            return
+
+        try:
+            body = json.loads(self.rfile.read(length).decode()) if length else {}
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            self._json({"error": {"message": f"Invalid JSON: {e}", "type": "invalid_request"}}, 400)
+            return
+
+        # Auth check (constant-time comparison)
         if API_KEY:
             auth = self.headers.get("Authorization", "")
-            if auth != f"Bearer {API_KEY}":
+            if not check_api_key(auth, API_KEY):
                 self._json({"error": {"message": "Invalid API key", "type": "auth_error"}}, 401)
-                usage_stats["errors"] += 1
+                with _stats_lock:
+                    usage_stats["errors"] += 1
                 return
 
         if self.path == "/v1/chat/completions":
@@ -293,6 +274,8 @@ class GatewayHandler(BaseHTTPRequestHandler):
     def _stream_chat(self, ollama_data, model):
         """Stream chat in OpenAI SSE format."""
         self._stream_sse()
+        chat_id = f"chatcmpl-{threading.get_ident()}-{int(time.time()*1000)}"
+        chunk_idx = 0
         req = Request(f"{OLLAMA_URL}/api/chat",
                       data=json.dumps(ollama_data).encode(),
                       headers={"Content-Type": "application/json"})
@@ -305,7 +288,19 @@ class GatewayHandler(BaseHTTPRequestHandler):
                 chunk = json.loads(decoded[6:])
                 content = chunk.get("message", {}).get("content", "")
                 if content:
-                    self.wfile.write(f"data: {json.dumps({'id':'chatcmpl-'+str(int(time.time()*1000)),'object':'chat.completion.chunk','created':int(time.time()),'model':model,'choices':[{'index':0,'delta':{'content':content},'finish_reason':None}]})}\n\n".encode())
+                    chunk_idx += 1
+                    sse_data = {
+                        "id": f"{chat_id}-{chunk_idx}",
+                        "object": "chat.completion.chunk",
+                        "created": int(time.time()),
+                        "model": model,
+                        "choices": [{
+                            "index": 0,
+                            "delta": {"content": content},
+                            "finish_reason": None,
+                        }],
+                    }
+                    self.wfile.write(f"data: {json.dumps(sse_data)}\n\n".encode())
                     self.wfile.flush()
                 if chunk.get("done"):
                     usage_stats["total_prompt_tokens"] += chunk.get("prompt_eval_count", 0)
@@ -434,7 +429,7 @@ def main():
     print(f"     GET  /v1/stats              — System stats")
     print(f"     GET  /v1/health             — Health check")
 
-    server = HTTPServer(("0.0.0.0", port), GatewayHandler)
+    server = ThreadingHTTPServer((host, port), GatewayHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

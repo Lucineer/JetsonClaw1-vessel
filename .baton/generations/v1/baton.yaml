@@ -1,0 +1,23 @@
+generation:
+  id: 1
+  timestamp: "2026-04-27T03:20:00Z"
+  agent: JetsonClaw1 (JC1)
+  model: zai/glm-5-turbo
+  context:
+    used_percent: 82
+    trigger: "baton-compaction requested by Casey"
+  workspace:
+    branch: main
+    uncommitted_files: 3
+    recent_commits: 12
+  performance:
+    tokens_used_estimate: 85000
+    duration_minutes: 180
+  handoff:
+    status: "complete"
+    files_written:
+      - .baton/generations/v1/ONBOARDING.md
+      - .baton/generations/v1/STATE.md
+      - .baton/generations/v1/DECISIONS.md
+      - .baton/generations/v1/TASKS_NEXT.md
+      - .baton/generations/v1/baton.yaml

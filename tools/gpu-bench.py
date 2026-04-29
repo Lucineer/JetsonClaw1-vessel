@@ -42,8 +42,13 @@ def get_thermal():
     for zone in zones:
         path = f"/sys/class/thermal/{zone}/temp"
         if os.path.exists(path):
-            with open(path) as f:
-                temps[zone] = round(int(f.read().strip()) / 1000, 1)
+            try:
+                with open(path, 'rb') as f:
+                    raw = f.read()
+                if raw:
+                    temps[zone] = round(int(raw.decode().strip()) / 1000, 1)
+            except (OSError, ValueError):
+                pass
     return temps
 
 
