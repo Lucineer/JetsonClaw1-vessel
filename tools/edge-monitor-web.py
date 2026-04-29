@@ -55,9 +55,10 @@ EDGE_SERVICES = {
 def read_tegrastats():
     """Run tegrastats once and parse the output line."""
     try:
+        # Use 2s timeout for more reliable capture
         result = subprocess.run(
-            ["timeout", "1", "tegrastats", "--interval", "100"],
-            capture_output=True, text=True, timeout=3
+            ["timeout", "2", "tegrastats", "--interval", "100"],
+            capture_output=True, text=True, timeout=4
         )
         if result.returncode == 0 and result.stdout.strip():
             lines = result.stdout.strip().split("\n")
@@ -169,10 +170,43 @@ def read_cma():
     return result
 
 
+def get_meminfo():
+    """Read RAM and swap from /proc/meminfo as fallback."""
+    result = {}
+    try:
+        with open("/proc/meminfo", "rb") as f:
+            raw = f.read().decode()
+        for line in raw.split("\n"):
+            parts = line.split(":")
+            if len(parts) != 2:
+                continue
+            key = parts[0].strip()
+            val_kb = int(parts[1].strip().split()[0])
+            if key == "MemTotal":
+                result["ram_total_mb"] = val_kb // 1024
+            elif key == "MemAvailable":
+                result["ram_available_mb"] = val_kb // 1024
+            elif key == "SwapTotal":
+                result["swap_total_mb"] = val_kb // 1024
+            elif key == "SwapFree":
+                result["swap_free_mb"] = val_kb // 1024
+        if "ram_total_mb" in result and "ram_available_mb" in result:
+            result["ram_used_mb"] = result["ram_total_mb"] - result["ram_available_mb"]
+        if "swap_total_mb" in result and "swap_free_mb" in result:
+            result["swap_used_mb"] = result["swap_total_mb"] - result["swap_free_mb"]
+    except Exception:
+        pass
+    return result
+
+
 def get_system_stats():
     """Get combined system stats from tegrastats + fallbacks."""
     data = read_tegrastats()
     data.update(read_cma())
+
+    # Fallback RAM/Swap from /proc/meminfo if tegrastats didn't get them
+    if not data.get("ram_total_mb"):
+        data.update(get_meminfo())
 
     # Fallback temps if tegrastats didn't cover them
     if not data.get("temp_gpu_c") or not data.get("temp_cpu_c"):
