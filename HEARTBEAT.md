@@ -1,5 +1,5 @@
 # HEARTBEAT.md
-## 2026-04-30 02:15 AKDT — v0.6.0: Native AI in the MUD
+## 2026-04-30 13:47 AKDT — v0.7.0: Synergy Wave — 200+ Stars, 2 Forks, Edge-PLATO Integration
 
 ### ✅ Shipped This Session
 - **edge-llama v0.6.0** — CPU inference works at 19 t/s via llama.cpp C API
@@ -27,12 +27,20 @@ No HTTP. No subprocess. Just pure shared library calls.
 - **GPU inference** — CMA depleted (6KB/512MB), needs reboot for cma=1024M
 - **gh auth expired** — can't create edge-llama repo on GitHub
 
+### 🔗 Synergy Stats
+- **Repos inventoried**: Lucineer (631), SuperInstance (623)
+- **Stars this session**: 200+ across both orgs
+- **New forks**: Lucineer/cocapn-plato (infer endpoint), Lucineer/cocapn-traps (edge-llama-tuner)
+- **PRs blocked**: Token lacks push to SuperInstance — Oracle1 needs to merge
+- **Bottle sent**: via Oracle1 shell + local forgemaster commit
+
 ### 📊 Stats
 - Model: deepseek-r1:1.5b Q4_K_M, 28 layers, 1.04GB GGUF
-- Speed: 19 t/s CPU (llama.cpp with Fused Gated Delta Net, Flash Attention)
+- Speed: 19 t/s CPU (llama.cpp with Fused Gated Delta Net, Flash Attention), 18 t/s streaming in MUD
 - Memory: ~1.3GB total (model + compute buffer + KV cache)
 - MUD commands: 14+ (tiles, system, ai, fleet, mesh)
 
 ### 🔜 Next
-1. Reboot (when ready) — unlocks GPU, CUDA inference jumps 3-5x
-2. Stream tokens back to MUD in real-time (flato integration)
+1. Oracle1 merges Lucineer forks into SuperInstance
+2. Reboot (when ready) — unlocks GPU, CUDA inference jumps 3-5x
+3. Deploy cocapn-plato server with /infer endpoint on Jetson
