@@ -12,6 +12,7 @@ Single server that exposes:
   POST /v1/rag/query            — RAG: search + generate
   GET  /v1/models               — List available models
   GET  /v1/stats                — System stats (GPU, RAM, CMA)
+  GET  /v1/native               — Native inference backend status
   GET  /v1/health               — Health check
   GET  /v1/conversations        — List conversations
   GET  /v1/conversations/:id    — Get conversation
@@ -248,6 +249,255 @@ def _oom_suggestions(requested_model, param_size):
     suggestions.append(f"qwen3.5:2b ({MODEL_HINTS['qwen3.5:2b']})")
     return "; ".join(suggestions)
 
+
+# ── Native Inference (libedge-cuda.so via ctypes) ──────────────
+#
+# Bypasses Ollama entirely — loads libedge-cuda.so into the Python process
+# and calls edge_generate() directly. Achieves ~18 t/s on deepseek-r1:1.5b Q4_K_M.
+# Falls back gracefully to Ollama if the shared library isn't available.
+
+class NativeInference:
+    """Native edge inference via libedge-cuda.so shared library.
+    
+    Uses the real API: edge_load() -> c_void_p (opaque handle),
+    edge_generate(handle, prompt) -> char*
+    Thread-safe via threading.Lock. Falls back gracefully.
+    """
+    
+    LIB_PATH = os.path.expanduser("~/edge-llama/build/libedge-cuda.so")
+    LIB_PATH_ALT = os.path.expanduser("~/edge-llama/build/libedge-cuda.so.1.0.0")
+    MODEL_PATH = os.path.expanduser("~/edge-llama/models/dsr1-1.5b-q4km.gguf")
+    
+    def __init__(self):
+        self._lib = None
+        self._impl = None
+        self._loaded = False
+        self._lock = threading.Lock()
+        self._last_error = None
+    
+    @property
+    def available(self) -> bool:
+        lib_ok = os.path.exists(self.LIB_PATH) or os.path.exists(self.LIB_PATH_ALT)
+        model_ok = os.path.exists(self.MODEL_PATH)
+        return lib_ok and model_ok
+    
+    def load(self) -> bool:
+        """Load the shared library and model. Thread-safe."""
+        with self._lock:
+            if self._loaded:
+                return True
+            lib_path = self.LIB_PATH if os.path.exists(self.LIB_PATH) else self.LIB_PATH_ALT
+            if not os.path.exists(lib_path):
+                self._last_error = f"Library not found: {lib_path}"
+                return False
+            if not os.path.exists(self.MODEL_PATH):
+                self._last_error = f"Model not found: {self.MODEL_PATH}"
+                return False
+            try:
+                import ctypes
+                old_cuda = os.environ.get("CUDA_VISIBLE_DEVICES")
+                os.environ["CUDA_VISIBLE_DEVICES"] = ""
+                try:
+                    # Pre-load ggml dependencies with RTLD_GLOBAL so weak symbols resolve.
+                    # libggml-cpu references quantize_row_nvfp4_ref which is defined in libggml-cuda.
+                    # Even with CUDA_VISIBLE_DEVICES="", libggml-cuda provides this symbol.
+                    import ctypes.util
+                    ggml_dir = os.path.expanduser(
+                        "~/.local/lib/python3.10/site-packages/llama_cpp/lib")
+                    for soname in ["libggml-base.so", "libggml-cpu.so",
+                                   "libggml-cuda.so"]:
+                        p = os.path.join(ggml_dir, soname)
+                        if os.path.exists(p):
+                            ctypes.CDLL(p, mode=ctypes.RTLD_GLOBAL)
+                    # Now load libedge-cuda.so — all symbols already resolved
+                    self._lib = ctypes.CDLL(lib_path, mode=ctypes.RTLD_LOCAL)
+                    # Real API: edge_load(const char*) -> c_void_p
+                    self._lib.edge_load.restype = ctypes.c_void_p
+                    self._lib.edge_load.argtypes = [ctypes.c_char_p]
+                    self._lib.edge_unload.restype = None
+                    self._lib.edge_unload.argtypes = [ctypes.c_void_p]
+                    # edge_generate: (opaque, prompt, max_tokens, &out_len, &new_tokens) -> char*
+                    self._lib.edge_generate.restype = ctypes.POINTER(ctypes.c_char)
+                    self._lib.edge_generate.argtypes = [
+                        ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int32,
+                        ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_int32),
+                    ]
+                    self._lib.edge_free_string.restype = None
+                    self._lib.edge_free_string.argtypes = [ctypes.c_void_p]
+                    # Accessors
+                    self._lib.edge_n_layer.restype = ctypes.c_int32
+                    self._lib.edge_n_layer.argtypes = [ctypes.c_void_p]
+                    self._lib.edge_n_embd.restype = ctypes.c_int32
+                    self._lib.edge_n_embd.argtypes = [ctypes.c_void_p]
+                    self._lib.edge_n_head.restype = ctypes.c_int32
+                    self._lib.edge_n_head.argtypes = [ctypes.c_void_p]
+                    self._lib.edge_n_vocab.restype = ctypes.c_int32
+                    self._lib.edge_n_vocab.argtypes = [ctypes.c_void_p]
+                    self._lib.edge_backend.restype = ctypes.c_char_p
+                    self._lib.edge_backend.argtypes = [ctypes.c_void_p]
+                    self._lib.edge_tokens_per_second.restype = ctypes.c_int32
+                    self._lib.edge_tokens_per_second.argtypes = [ctypes.c_void_p]
+                    self._lib.edge_vram_total.restype = ctypes.c_int64
+                    self._lib.edge_vram_total.argtypes = [ctypes.c_void_p]
+                    self._lib.edge_vram_free.restype = ctypes.c_int64
+                    self._lib.edge_vram_free.argtypes = [ctypes.c_void_p]
+                    # Load model
+                    self._impl = self._lib.edge_load(self.MODEL_PATH.encode('utf-8'))
+                    if not self._impl:
+                        self._last_error = f"Failed to load: {self.MODEL_PATH}"
+                        return False
+                    self._loaded = True
+                    return True
+                finally:
+                    if old_cuda is not None:
+                        os.environ["CUDA_VISIBLE_DEVICES"] = old_cuda
+                    else:
+                        del os.environ["CUDA_VISIBLE_DEVICES"]
+            except Exception as e:
+                self._last_error = str(e)
+                return False
+    
+    def generate(self, prompt: str, max_tokens: int = 100) -> dict:
+        if not self._loaded and not self.load():
+            return {"text": "", "tokens": 0, "tps": 0.0, "backend": "none",
+                    "error": self._last_error or "native inference unavailable"}
+        try:
+            import ctypes
+            prompt_bytes = prompt.encode('utf-8')
+            out_len = ctypes.c_int32(0)
+            new_tokens = ctypes.c_int32(0)
+            start = time.time()
+            result_ptr = self._lib.edge_generate(
+                self._impl, prompt_bytes,
+                ctypes.c_int32(max_tokens),
+                ctypes.byref(out_len), ctypes.byref(new_tokens),
+            )
+            elapsed = time.time() - start
+            if result_ptr:
+                text = ctypes.string_at(result_ptr, out_len.value).decode('utf-8', errors='replace')
+                self._lib.edge_free_string(result_ptr)
+            else:
+                text = ""
+            tokens = new_tokens.value
+            tps = max(round(tokens / elapsed, 1) if elapsed > 0 else 0.1, 0.1)
+            return {"text": text, "tokens": tokens, "tps": tps, "backend": self.backend_name}
+        except Exception as e:
+            self._last_error = str(e)
+            return {"text": "", "tokens": 0, "tps": 0.0, "backend": "none", "error": str(e)}
+    
+    @property
+    def backend_name(self) -> str:
+        if not self._impl:
+            return "none"
+        try:
+            import ctypes
+            self._lib.edge_backend.restype = ctypes.c_char_p
+            name = self._lib.edge_backend(self._impl)
+            if name:
+                return name.decode('utf-8', errors='replace')
+            return "unknown"
+        except Exception as e:
+            return f"unknown ({e})"
+    
+    def status(self) -> dict:
+        lib_path = self.LIB_PATH if os.path.exists(self.LIB_PATH) else (self.LIB_PATH_ALT if os.path.exists(self.LIB_PATH_ALT) else "not found")
+        model_path = self.MODEL_PATH if os.path.exists(self.MODEL_PATH) else "not found"
+        result = {"available": self.available, "loaded": self._loaded, "library": lib_path, "model": model_path, "last_error": self._last_error}
+        if self._impl:
+            try:
+                result["backend"] = self.backend_name
+                result["layers"] = self._lib.edge_n_layer(self._impl)
+                result["heads"] = self._lib.edge_n_head(self._impl)
+                result["embd"] = self._lib.edge_n_embd(self._impl)
+                result["vocab"] = self._lib.edge_n_vocab(self._impl)
+                result["tps"] = self._lib.edge_tokens_per_second(self._impl)
+                result["vram_total"] = self._lib.edge_vram_total(self._impl)
+                result["vram_free"] = self._lib.edge_vram_free(self._impl)
+            except Exception:
+                pass
+        return result
+
+
+# ── Native Inference Socket Listener ───────────────────────────
+# Listens on /tmp/edge-native.sock for lightweight text-in/text-out
+# inference requests without going through the HTTP gateway.
+
+NATIVE_SOCKET_PATH = "/tmp/edge-native.sock"
+
+def _start_native_socket(native: NativeInference):
+    """Background thread: Unix socket listener for native inference.
+    
+    Accepts JSON: {"prompt": "...", "max_tokens": 100}
+    Returns JSON: {"text": "...", "tokens": N, "tps": N.N, "backend": "native"}
+    """
+    import socket as sock
+    import os
+    try:
+        os.unlink(NATIVE_SOCKET_PATH)
+    except OSError:
+        pass
+    
+    server = sock.socket(sock.AF_UNIX, sock.SOCK_STREAM)
+    server.bind(NATIVE_SOCKET_PATH)
+    server.listen(5)
+    os.chmod(NATIVE_SOCKET_PATH, 0o666)
+    
+    while True:
+        try:
+            conn, _ = server.accept()
+            data = b""
+            while True:
+                chunk = conn.recv(4096)
+                if not chunk:
+                    break
+                data += chunk
+                try:
+                    # Try to parse — if we have a complete JSON object, process it
+                    req = json.loads(data.decode())
+                    prompt = req.get("prompt", "")
+                    max_tokens = req.get("max_tokens", 100)
+                    result = native.generate(prompt, max_tokens)
+                    resp = json.dumps(result).encode()
+                    conn.sendall(resp)
+                    break
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    continue  # Need more data
+            conn.close()
+        except Exception:
+            pass  # Socket cleanup on shutdown
+
+
+# ── Native inference singleton ─────────────────────────────────
+_native_backend = None
+_native_lock = threading.Lock()
+_native_socket_started = False
+
+
+def get_native_backend() -> NativeInference:
+    global _native_backend
+    if _native_backend is None:
+        with _native_lock:
+            if _native_backend is None:
+                _native_backend = NativeInference()
+    return _native_backend
+
+
+def _ensure_native_socket():
+    """Start the native inference Unix socket listener (once)."""
+    global _native_socket_started
+    if not _native_socket_started and get_native_backend().available:
+        with _native_lock:
+            if not _native_socket_started:
+                _native_socket_started = True
+                t = threading.Thread(
+                    target=_start_native_socket,
+                    args=(get_native_backend(),),
+                    daemon=True,
+                )
+                t.start()
+
+
+# ── System-level helpers ───────────────────────────────────────
 
 def get_effective_options():
     """Return recommended Ollama options for this Jetson."""
@@ -492,15 +742,23 @@ def _build_status_html(stats):
     ollama_ok = ollama_request("/api/tags", timeout=3)
     ollama_status = "connected" if "error" not in ollama_ok else "disconnected"
 
+    # Native inference status
+    native = get_native_backend()
+    native_status = native.status()
+    native_avail = "available" if native_status.get("available") else "not available"
+    native_loaded = "loaded" if native_status.get("loaded") else ("idle" if native_status.get("available") else "not loaded")
+
     html_out = STATUS_HTML_HEAD
     html_out += f'<h1>🔋 Edge AI Gateway</h1>'
-    html_out += f'<div class="subtitle">v{VERSION} — Jetson Orin Nano 8GB — Ollama @ {OLLAMA_URL}</div>'
+    html_out += f'<div class="subtitle">v{VERSION} — Jetson Orin Nano 8GB — Ollama @ {OLLAMA_URL} | Native: {native_avail}</div>'
 
     # ── Status row ──
     html_out += '<div class="card"><h2>📊 System Status</h2><div class="stat-grid">'
     html_out += f'<div class="stat"><div class="label">Uptime</div><div class="value uptime blue">{uptime_str}</div></div>'
     clr = "green" if ollama_status == "connected" else "red"
     html_out += f'<div class="stat"><div class="label">Ollama</div><div class="value {clr}">{ollama_status}</div></div>'
+    nclr = "green" if native_avail == "available" else "red"
+    html_out += f'<div class="stat"><div class="label">Native</div><div class="value {nclr}">{native_loaded}</div></div>'
     clr = "green" if health_status == "healthy" else "yellow"
     html_out += f'<div class="stat"><div class="label">Gateway</div><div class="value {clr}">{health_status}</div></div>'
     html_out += f'<div class="stat"><div class="label">Requests</div><div class="value blue">{usage.get("total_requests", 0)}</div></div>'
@@ -573,6 +831,7 @@ def _build_status_html(stats):
         ("GET", "/v1/models", "List models"),
         ("GET", "/v1/stats", "System stats"),
         ("GET", "/v1/health", "Health check"),
+        ("GET", "/v1/native", "Native inference status"),
         ("GET", "/v1/usage", "Usage stats"),
         ("GET", "/v1/conversations", "List conversations"),
         ("POST", "/v1/conversations", "Create conversation"),
@@ -660,11 +919,16 @@ class GatewayHandler(BaseHTTPRequestHandler):
             fleet = _check_fleet()
             self._json(fleet)
 
+        elif self.path == "/v1/native":
+            self._json(get_native_backend().status())
+
         elif self.path == "/v1/health":
             resp = ollama_request("/api/tags")
+            native = get_native_backend()
             healthy = "error" not in resp
-            self._json({"status": "ok" if healthy else "degraded",
+            self._json({"status": "ok" if healthy or native.available else "degraded",
                         "ollama": "connected" if healthy else "disconnected",
+                        "native": "loaded" if native.available else "unavailable",
                         "device": "Jetson Orin Nano 8GB",
                         "version": VERSION})
 
@@ -702,7 +966,9 @@ class GatewayHandler(BaseHTTPRequestHandler):
                     usage_stats["errors"] += 1
                 return
 
-        if self.path == "/v1/chat/completions":
+        if self.path == "/v1/chat/completions" or self.path.startswith("/v1/chat/completions?"):
+            # Check for ?native=true to force native inference
+            body["_force_native"] = "?native=true" in self.path
             self._handle_chat(body)
         elif self.path == "/v1/embeddings":
             self._handle_embeddings(body)
@@ -727,9 +993,31 @@ class GatewayHandler(BaseHTTPRequestHandler):
         messages = body.get("messages", [])
         stream = body.get("stream", False)
         options = body.get("options", {})
+        force_native = body.pop("_force_native", False)
 
         if not messages:
             self._json({"error": {"message": "No messages", "type": "invalid_request"}}, 400)
+            return
+
+        # ── Force native inference if ?native=true ──
+        if force_native:
+            native = get_native_backend()
+            if native.available:
+                native.load()
+                if native._loaded:
+                    ollama_messages = []
+                    system_msg = None
+                    for m in messages:
+                        if m["role"] == "system":
+                            system_msg = m["content"]
+                        else:
+                            ollama_messages.append(m)
+                    self._native_chat_fallback(
+                        body, ollama_messages, system_msg,
+                        raw_model, raw_model, options, "forced native")
+                    return
+            self._json({"error": {"message": "Native inference unavailable",
+                                  "type": "native_unavailable"}}, 503)
             return
 
         # ── Smart model routing ──
@@ -795,6 +1083,16 @@ class GatewayHandler(BaseHTTPRequestHandler):
             if "error" in resp:
                 with _stats_lock:
                     usage_stats["errors"] += 1
+                # Fallback: try native inference when Ollama is unreachable
+                native = get_native_backend()
+                if native.available:
+                    native.load()
+                    if native._loaded:
+                        self._native_chat_fallback(
+                            body, ollama_messages, system_msg,
+                            resolved_model, raw_model, options,
+                            str(resp.get("error", "")))
+                        return
                 self._json({"error": {"message": f"{resp['error']} (model: {resolved_model})",
                                       "type": "upstream_error"}}, 502)
                 return
@@ -834,6 +1132,68 @@ class GatewayHandler(BaseHTTPRequestHandler):
                     "total_tokens": prompt_tokens + completion_tokens,
                 },
             })
+
+    def _native_chat_fallback(self, body, ollama_messages, system_msg,
+                              resolved_model, raw_model, options, ollama_error):
+        """Fallback handler: run inference via libedge-cuda.so when Ollama is down.
+        
+        Builds a prompt from the messages, runs native inference, and returns
+        an OpenAI-compatible response. Non-streaming only.
+        """
+        native = get_native_backend()
+        if not native._loaded and not native.load():
+            self._json({"error": {"message": f"Ollama down and native inference unavailable: {ollama_error}",
+                                  "type": "upstream_error"}}, 502)
+            return
+
+        # Build a simple prompt from messages
+        prompt_parts = []
+        if system_msg:
+            prompt_parts.append(f"[System] {system_msg}")
+        for m in ollama_messages:
+            role = m["role"]
+            content = m["content"]
+            if role == "user":
+                prompt_parts.append(f"[User] {content}")
+            elif role == "assistant":
+                prompt_parts.append(f"[Assistant] {content}")
+        prompt = "\n".join(prompt_parts) + "\n[Assistant]"
+
+        max_tokens = options.get("num_predict", 2048) if isinstance(options, dict) else 2048
+        start_t = time.time()
+        native_result = native.generate(prompt, max_tokens=max_tokens)
+        elapsed_ms = (time.time() - start_t) * 1000
+
+        if native_result.get("backend", "") not in ("none", ""):
+            prompt_tokens = max(len(prompt) // 4, 1)
+            tokens = native_result.get("tokens", 0)
+            completion_tokens = max(tokens, 1)
+            with _stats_lock:
+                usage_stats["total_prompt_tokens"] += prompt_tokens
+                usage_stats["total_completion_tokens"] += completion_tokens
+            store.log_usage(resolved_model + " (native)", "/v1/chat/completions",
+                           prompt_tokens, completion_tokens, elapsed_ms)
+            self._json({
+                "id": f"chatcmpl-native-{int(time.time()*1000)}",
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": raw_model,
+                "backend": native_result.get("backend", "native"),
+                "tps": native_result.get("tps", 0),
+                "choices": [{
+                    "index": 0,
+                    "message": {"role": "assistant", "content": native_result["text"]},
+                    "finish_reason": "stop",
+                }],
+                "usage": {
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": prompt_tokens + completion_tokens,
+                },
+            })
+        else:
+            self._json({"error": {"message": f"Ollama down and native inference failed: {native_result.get('error', 'unknown')} (ollama: {ollama_error})",
+                                  "type": "upstream_error"}}, 502)
 
     def _stream_chat(self, ollama_data, resolved_model, raw_model):
         """Stream chat: reads NDJSON from Ollama, emits OpenAI SSE to client.
