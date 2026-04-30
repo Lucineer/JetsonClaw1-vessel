@@ -1,29 +1,38 @@
 # HEARTBEAT.md
-## 2026-04-30 01:30 AKDT — Plato System Expansion
+## 2026-04-30 02:15 AKDT — v0.6.0: Native AI in the MUD
 
-### ✅ Built This Session
-- **edge-llama MVP** — GGUF v3 loader, Qwen2 transformer, server (all compiles, dequantizes)
-- **flato MUD skeleton** — 19KB C17 telnet server with edge-llama bridge
-- **@system command** — live Jetson dashboard inside Plato (memory, CPU, GPU, services, CMA)
-- **@infer command** — routes prompts through local edge gateway inside the MUD
-- **@fleet command** — fleet bottle inbox status inside the MUD
-- **@fleet-read command** — read fleet bottles from inside Plato
-- **3 new knowledge tiles** — edge-llama, GGUF v3 format notes, flato-mud
-- **Tile graph rebuilt** — 10 tiles, 24 edges, all connected
-- **All commits pushed** — 3 repos: workspace, plato-jetson, edge-llama (local)
+### ✅ Shipped This Session
+- **edge-llama v0.6.0** — CPU inference works at 19 t/s via llama.cpp C API
+  - libedge-cuda.so links libllama.so directly, no ggml graph hand-building
+  - Runs with CUDA_VISIBLE_DEVICES="" to avoid depleted CMA pool crash
+  - Full GGUF loading, tokenization, greedy sampling, text generation
+- **edge_native.py** — Python ctypes wrapper: `with EdgeModel("model.gguf") as e: e.generate()`
+- **Plato edge_plato.py** — EdgePlatoModel singleton loads libedge-cuda.so into MUD process
+- **Plato ai_commands.py** — @infer (native, no HTTP), @think (ship AI), @model, @model-reload
+- **at_server_startstop.py** — Auto-loads model at Evennia init, unloads at shutdown
+- **systemd updated** — CUDA_VISIBLE_DEVICES="" for Evennia service
+- **All pushed** — edge-llama (local), plato-jetson, workspace
+
+### 🎯 Architecture
+```
+┌───────────────┐     ┌─────────────────┐     ┌──────────────┐
+│  Evennia MUD  │────▶│ libedge-cuda.so │────▶│ libllama.so  │
+│  (Python)     │     │ (C ctypes)      │     │ llama.cpp    │
+│  @infer @think │     │ 19 t/s CPU      │     │ GGUF/CPU     │
+└───────────────┘     └─────────────────┘     └──────────────┘
+No HTTP. No subprocess. Just pure shared library calls.
+```
 
 ### 🚧 Blocked
-- **GPU inference** — CMA at 6KB/512MB, needs reboot for `cma=1024M`
-- **gh auth token** — expired, can't create new repos on GitHub
+- **GPU inference** — CMA depleted (6KB/512MB), needs reboot for cma=1024M
+- **gh auth expired** — can't create edge-llama repo on GitHub
 
-### 📊 Plato Stats
-- MUD: 14 rooms, 26 exits, 5+ custom commands
-- Tiles: 10 nodes, 24 edges, fully connected knowledge graph
-- Commands: @tiles, @tile, @tilesearch, @tilecreate, @rooms, @system, @infer, @fleet, @fleet-read
-- Services: openclaw, edge-gateway, edge-chat, edge-monitor, evennia — all boot-persistent
+### 📊 Stats
+- Model: deepseek-r1:1.5b Q4_K_M, 28 layers, 1.04GB GGUF
+- Speed: 19 t/s CPU (llama.cpp with Fused Gated Delta Net, Flash Attention)
+- Memory: ~1.3GB total (model + compute buffer + KV cache)
+- MUD commands: 14+ (tiles, system, ai, fleet, mesh)
 
 ### 🔜 Next
-1. Reboot (when Casey's ready) — activates CMA, unlocks GPU
-2. edge-llama + CUDA for 12+ t/s inference
-3. flato + edge-llama end-to-end
-4. Full system integration
+1. Reboot (when ready) — unlocks GPU, CUDA inference jumps 3-5x
+2. Stream tokens back to MUD in real-time (flato integration)
