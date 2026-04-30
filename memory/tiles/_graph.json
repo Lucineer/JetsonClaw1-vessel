@@ -1,6 +1,23 @@
 {
-  "built_at": "2026-04-28T21:29:51.108689",
+  "built_at": "2026-04-30T00:21:36.078589",
   "nodes": {
+    "cocapn-product-ecosystem.md": {
+      "id": "cocapn-product-ecosystem",
+      "domain": "general",
+      "tags": [
+        "'cocapn'",
+        "'product'",
+        "'sdk'",
+        "'api'",
+        "'ecosystem'",
+        "'fleet'"
+      ],
+      "created": "2026-04-30",
+      "updated": "2026-04-30",
+      "title": "Cocapn Product Ecosystem",
+      "word_count": 180,
+      "path": "/home/lucineer/.openclaw/workspace/memory/tiles/cocapn-product-ecosystem.md"
+    },
     "jetson-edge-gpu-lessons.md": {
       "id": "jetson-edge-gpu-lessons",
       "domain": "general",
@@ -31,6 +48,23 @@
       "title": "Fleet-Protocol",
       "word_count": 96,
       "path": "/home/lucineer/.openclaw/workspace/memory/tiles/fleet-protocol.md"
+    },
+    "fleet-mesh-architecture.md": {
+      "id": "fleet-mesh-architecture",
+      "domain": "general",
+      "tags": [
+        "'fleet'",
+        "'architecture'",
+        "'onboarding'",
+        "'oracle1'",
+        "'edge'",
+        "'cocapn'"
+      ],
+      "created": "2026-04-30",
+      "updated": "2026-04-30",
+      "title": "Fleet Mesh Architecture",
+      "word_count": 172,
+      "path": "/home/lucineer/.openclaw/workspace/memory/tiles/fleet-mesh-architecture.md"
     },
     "cocapn-architecture.md": {
       "id": "cocapn-architecture",
@@ -65,9 +99,33 @@
       "title": "Trending-Research-2026-04",
       "word_count": 118,
       "path": "/home/lucineer/.openclaw/workspace/memory/tiles/trending-research-2026-04.md"
+    },
+    "jetson-gpu-optimization.md": {
+      "id": "jetson-gpu-optimization",
+      "domain": "general",
+      "tags": [
+        "'jetson'",
+        "'edge'",
+        "'gpu'",
+        "'cuda'",
+        "'cma'",
+        "'ollama'"
+      ],
+      "created": "2026-04-30",
+      "updated": "2026-04-30",
+      "title": "Jetson GPU Optimization",
+      "word_count": 180,
+      "path": "/home/lucineer/.openclaw/workspace/memory/tiles/jetson-gpu-optimization.md"
     }
   },
   "edges": [
+    {
+      "source": "cocapn-product-ecosystem.md",
+      "target": "fleet-mesh-architecture.md",
+      "type": "shared_tag",
+      "tag": "'cocapn'",
+      "weight": 1
+    },
     {
       "source": "fleet-protocol.md",
       "target": "jetson-edge-gpu-lessons.md",
@@ -90,16 +148,47 @@
       "weight": 1
     },
     {
+      "source": "fleet-mesh-architecture.md",
+      "target": "jetson-gpu-optimization.md",
+      "type": "shared_tag",
+      "tag": "'edge'",
+      "weight": 1
+    },
+    {
       "source": "cocapn-architecture.md",
       "target": "trending-research-2026-04.md",
       "type": "shared_tag",
       "tag": "ai",
       "weight": 1
+    },
+    {
+      "source": "cocapn-architecture.md",
+      "target": "cocapn-product-ecosystem.md",
+      "type": "content_reference",
+      "weight": 2
+    },
+    {
+      "source": "cocapn-architecture.md",
+      "target": "fleet-mesh-architecture.md",
+      "type": "content_reference",
+      "weight": 2
+    },
+    {
+      "source": "jetson-edge-gpu-lessons.md",
+      "target": "jetson-gpu-optimization.md",
+      "type": "content_reference",
+      "weight": 2
+    },
+    {
+      "source": "cocapn-architecture.md",
+      "target": "jetson-gpu-optimization.md",
+      "type": "content_reference",
+      "weight": 2
     }
   ],
   "stats": {
-    "tiles": 4,
-    "connections": 4,
-    "tags": 15
+    "tiles": 7,
+    "connections": 10,
+    "tags": 30
   }
 }
