@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-30T10:13:43.915Z",
+  "entries": {
+    "memory:memory/2026-04-01.md:160:183": {
+      "key": "memory:memory/2026-04-01.md:160:183",
+      "path": "memory/2026-04-01.md",
+      "startLine": 160,
+      "endLine": 183,
+      "source": "memory",
+      "snippet": "- Top strength: edge-native foundation + papermill data moat - 30-day priority: consolidate repos, fix pipeline, choose ONE flagship ### 5 New Repos from Superinstance Adaptation - mycelium-ai: Behavior capture as seeds (from superinstance/Mycelium) - baton-ai: Context handoff for agents (from superinstance/Claude_Baton) - kungfu-ai: Skill injection (from superinstance/I-know-kung-fu) - crdt-sync: CRDT state sync for fleets (from superinstance/SmartCRDT) - personality-engine: Unified personality system (from superinstance/ai-character-sdk) ### Superinstance Repos Studied - 90+ repos on github.com/superinstance - Key repos: Spreadsheet-moment (Univer-based), Spreadsheet-ai (tile intelli",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1,
+      "maxScore": 1,
+      "firstRecalledAt": "2026-04-30T10:13:43.915Z",
+      "lastRecalledAt": "2026-04-30T10:13:43.915Z",
+      "queryHashes": [
+        "3bbf72f8397d"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "edge-native",
+        "30-day",
+        "mycelium-ai",
+        "superinstance/mycelium",
+        "baton-ai",
+        "superinstance/claude-baton",
+        "kungfu-ai",
+        "superinstance/i-know-kung-fu"
+      ]
+    },
+    "memory:memory/2026-04-01.md:139:165": {
+      "key": "memory:memory/2026-04-01.md:139:165",
+      "path": "memory/2026-04-01.md",
+      "startLine": 139,
+      "endLine": 165,
+      "source": "memory",
+      "snippet": "- Output skills: keep-recent, summarize, tally, recipe-book, cascade, archive - Multi-model refinement: claws compare outputs, vary seeds/temps, accumulate training data - Built on Univer (open source spreadsheet), stripped to bones - Chatbot panel as orchestrator - 3 Gemini papers + 1 DeepSeek devil's advocate generated - 1 architecture doc, 1 cellular patterns doc, 1 organism paper ### Agent Synergy Strategies Documented - 4 personas: Devil's Advocate (DeepSeek Chat), Socratic Teacher (DeepSeek Reasoner/Gemini 2.5), Helpful Assistant (Gemini 3.1/GLM-5.1), Bright Young (Gemini 2.5 high temp) - 5 synergy patterns: Build→Break→Fix, Think→Question→Deepen, Build→Why→Pivot, Multi-Model Simulate",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1,
+      "maxScore": 1,
+      "firstRecalledAt": "2026-04-30T10:13:43.915Z",
+      "lastRecalledAt": "2026-04-30T10:13:43.915Z",
+      "queryHashes": [
+        "3bbf72f8397d"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "keep-recent",
+        "recipe-book",
+        "multi-model",
+        "seeds/temps",
+        "reasoner/gemini",
+        "2.5",
+        "3.1/glm-5.1",
+        "output"
+      ]
+    },
+    "memory:memory/2025-03-25.md:19:45": {
+      "key": "memory:memory/2025-03-25.md:19:45",
+      "path": "memory/2025-03-25.md",
+      "startLine": 19,
+      "endLine": 45,
+      "source": "memory",
+      "snippet": "- **Semantic cache** — subagent building vault/semantic_cache.py ### Research Done - **superinstance analysis** — vaporware, no implementation. Good concepts: markdown-as-config, tiered inference cascade, CRDT memory - **llama.cpp integration** — use llama-cpp-python directly (not Ollama), Q5_K_M sweet spot for 2B on 8GB, prompt caching, in-process via ctypes - **Performance audit** — 6 HIGH issues (all fixed), 8 MEDIUM issues, Rust rewrite premature ### Key Decisions - llama-cpp-python over Ollama for local inference (zero IPC, native LoRA, prompt caching) - Stats-based routing optimization over ML classifier (interpretable, debuggable) - Connection pooling biggest real-world perf win (TC",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1,
+      "maxScore": 1,
+      "firstRecalledAt": "2026-04-30T10:13:43.915Z",
+      "lastRecalledAt": "2026-04-30T10:13:43.915Z",
+      "queryHashes": [
+        "3bbf72f8397d"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "vault/semantic-cache.py",
+        "markdown-as-config",
+        "llama.cpp",
+        "llama-cpp-python",
+        "q5-k-m",
+        "in-process",
+        "stats-based",
+        "real-world"
+      ]
+    },
+    "memory:memory/2026-03-28.md:37:68": {
+      "key": "memory:memory/2026-03-28.md:37:68",
+      "path": "memory/2026-03-28.md",
+      "startLine": 37,
+      "endLine": 68,
+      "source": "memory",
+      "snippet": "## LOG.ai → cocapn Migration Implications - log-origin repo becomes cocapn's cloud deployment template - dmlog-ai features (dice roller, NPC panel, character stats) become cocapn modules - Each *log.ai domain is a cocapn fleet member with a themed personality - The PII engine, routing, draft comparison from LOG.ai become cocapn cloud modules - Claude Code CLAUDE.md needs to reflect cocapn as the root, not log-origin ## Claude Code Status - Working via z.ai: `claude -p \"...\" --model claude-sonnet-4-20250514` - Settings: `/home/lucineer/.claude/settings.json` - z.ai Anthropic-compatible endpoint with key in settings env block ## Cocapn Codebase Status - Cloned to /tmp/cocapn from github.com/",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1,
+      "maxScore": 1,
+      "firstRecalledAt": "2026-04-30T10:13:43.915Z",
+      "lastRecalledAt": "2026-04-30T10:13:43.915Z",
+      "queryHashes": [
+        "3bbf72f8397d"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "log.ai",
+        "log-origin",
+        "dmlog-ai",
+        "claude.md",
+        "z.ai",
+        "claude-sonnet-4-20250514",
+        "home/lucineer",
+        "claude/settings.json"
+      ]
+    },
+    "memory:memory/2025-03-25.md:1:23": {
+      "key": "memory:memory/2025-03-25.md:1:23",
+      "path": "memory/2025-03-25.md",
+      "startLine": 1,
+      "endLine": 23,
+      "source": "memory",
+      "snippet": "# 2025-03-25 Session Log ## LOG-mcp Development Session ### Completed - **Phase 2 merged to main** — intelligent routing, draft round, feedback, preferences - **Draft round** — 3 profiles (precise/creative/deep), parallel API calls, click-to-rank UI, winner elaboration - **Provider profiles** — CRUD API, ProfileManager with JSON persistence, custom profiles - **Settings panel** — profiles display, privacy toggle, preferences read-only - **Phase 3A stats engine** — StatsCollector, RoutingUpdater, /v1/stats/routing, /v1/routing/suggest, /v1/routing/update - **Performance fixes** — httpx connection pooling, compiled regex (class-level), SQLite WAL, O(1) entity IDs, HTMLResponse bug fix - **Lo",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1,
+      "maxScore": 1,
+      "firstRecalledAt": "2026-04-30T10:13:43.915Z",
+      "lastRecalledAt": "2026-04-30T10:13:43.915Z",
+      "queryHashes": [
+        "3bbf72f8397d"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "log-mcp",
+        "precise/creative/deep",
+        "click-to-rank",
+        "read-only",
+        "v1/stats/routing",
+        "v1/routing/suggest",
+        "v1/routing/update",
+        "class-level"
+      ]
+    }
+  }
+}
