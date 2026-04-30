@@ -275,6 +275,71 @@ def _ollama_raw_request(endpoint, data=None, stream=False):
         return {"error": str(e)}
 
 
+# ── Fleet health discovery ───────────────────────────────────────
+ORACLE1_URL = "http://147.224.38.131:8848"
+FLEET_NODES = {
+    "jc1": {"name": "JC1", "role": "edge", "url": "http://127.0.0.1:11435"},
+    "oracle1": {"name": "Oracle1", "role": "cloud", "url": ORACLE1_URL},
+}
+
+
+def _check_fleet():
+    """Discover fleet-wide health by probing known nodes.
+
+    Returns a dict of node statuses plus aggregate fleet health.
+    All checks are best-effort with short timeouts to avoid blocking.
+    """
+    fleet = {}
+    nodes_up = 0
+    nodes_total = len(FLEET_NODES)
+
+    for node_id, info in FLEET_NODES.items():
+        url = info["url"]
+        status = "unknown"
+        version = None
+        error = None
+
+        try:
+            if node_id == "oracle1":
+                r = urlopen(Request(f"{url}/connect?agent=jc1-fleet"), timeout=3)
+                body = r.read().decode()
+                data = json.loads(body) if body.startswith("{") else {"raw": body[:100]}
+                status = "ok"
+                nodes_up += 1
+            else:
+                r = urlopen(Request(f"{url}/v1/health"), timeout=3)
+                data = json.loads(r.read().decode())
+                status = "ok" if data.get("status") == "ok" else "degraded"
+                version = data.get("version")
+                nodes_up += 1
+        except Exception as e:
+            status = "unreachable"
+            error = str(e)[:80]
+
+        fleet[node_id] = {
+            "name": info["name"],
+            "role": info["role"],
+            "status": status,
+            "version": version,
+            "error": error,
+        }
+
+    if nodes_up >= nodes_total:
+        fleet_health = "ok"
+    elif nodes_up > 0:
+        fleet_health = "degraded"
+    else:
+        fleet_health = "down"
+
+    return {
+        "fleet": fleet_health,
+        "nodes": fleet,
+        "nodes_up": nodes_up,
+        "nodes_total": nodes_total,
+        "discovered_at": datetime.now().isoformat(),
+    }
+
+
 def get_stats():
     """System stats using shared monitoring module."""
     snap = get_snapshot()
@@ -468,6 +533,27 @@ def _build_status_html(stats):
         html_out += '<p style="color:#8b949e;">No models available — Ollama may be disconnected.</p>'
     html_out += '</div>'
 
+    # ── Fleet status card ──
+    html_out += '<div class="card"><h2>🌐 Fleet</h2><div class="stat-grid">'
+
+    # Check Oracle1
+    oracle_ok = False
+    try:
+        r = urlopen(Request("http://147.224.38.131:8848/connect?agent=jc1-fleet"), timeout=3)
+        oracle_ok = True
+    except Exception:
+        pass
+
+    oracle_clr = "green" if oracle_ok else "red"
+    oracle_txt = "connected" if oracle_ok else "unreachable"
+    n_up = 2 if oracle_ok else 1
+    f_color = "green" if n_up == 2 else "yellow"
+    html_out += f'<div class="stat"><div class="label">Nodes Up</div><div class="value {f_color}">{n_up} / 2</div></div>'
+    html_out += f'<div class="stat"><div class="label">Oracle1</div><div class="value {oracle_clr}">{oracle_txt}</div></div>'
+    html_out += f'<div class="stat"><div class="label">Edge</div><div class="value green">online</div></div>'
+    html_out += f'<div class="stat"><div class="label">Fleet API</div><div class="value blue"><span class="endpoint">/v1/fleet</span></div></div>'
+    html_out += '</div></div>'
+
     # ── Usage stats ──
     html_out += '<div class="card"><h2>📈 Usage Stats</h2><div class="stat-grid">'
     html_out += f'<div class="stat"><div class="label">Chat Requests</div><div class="value blue">{usage.get("chat_requests", 0)}</div></div>'
@@ -569,6 +655,10 @@ class GatewayHandler(BaseHTTPRequestHandler):
 
         elif self.path == "/v1/stats":
             self._json(get_stats())
+
+        elif self.path == "/v1/fleet":
+            fleet = _check_fleet()
+            self._json(fleet)
 
         elif self.path == "/v1/health":
             resp = ollama_request("/api/tags")
