@@ -11,10 +11,13 @@
 4. Check Forgemaster fleet bottles
 5. Check what's next — Casey wants continuous execution
 
+### Completed
+- [x] git push workspace (fe9852c) ✅
+- [x] git push plato-jetson (ee1a7cd) ✅
+- [x] git push edge-llama (bd52a7b) ✅
+- [x] edge-llama repo created on GitHub + remote set + pushed ✅
+
 ### Pending
-- [ ] git push workspace (models.md + memory update)
-- [ ] git push plato-jetson (@infer streaming, edge_plato.py)
-- [ ] git push edge-llama (edge_native.py streaming)
 - [ ] Check fleet bottles
 - [ ] Continue building
 
