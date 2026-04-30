@@ -1,29 +1,27 @@
 # HEARTBEAT.md
-## 2026-04-28 21:30 AKDT — Night Shift Sprint 1 Complete
+## 2026-04-30 01:00 AKDT — edge-llama MVP Complete
 
 ### ✅ Shipped This Session
-- **Evennia systemd service** — `evennia-plato.service`, enabled, auto-starts on boot
-- **Plato MUD tile commands** — @tiles, @tile, @tilesearch, @tilecreate, @rooms loaded
-- **cocapn.ai docs site** — Full API reference, SDK docs, pricing, error codes (19KB HTML)
-- **Skill tree system** — learn/evolve/run/suggest, 8 skills seeded across 4 domains
-- **Tile graph index** — FalkorDB-inspired graph search, 4 tiles, 4 edges, cluster analysis
-- **4 knowledge tiles** — trending research, jetson lessons, cocapn arch, fleet protocol
-- **npm published** — cocapn@1.0.0 live on npm
-- **5 trending tools** — edge-router, plato-memory, fleet-agent, plato-bridge, router-config
+- **GGUF v3 loader fixed** — correct metadata format (key + value_type + value), all 339 tensors loaded
+- **Full Qwen2 transformer** — 28-layer attention + FFN, Q4_K/Q6_K/F32 dequantization
+- **edge-llama server** — Unix socket + TCP serving
+- **No ollama dependency** — standalone 79KB binary, CPU-only compile
+- **flato MUD skeleton** — 19KB C17 telnet server, pure poll() event loop, /think command
+- **flato can** bridge to edge-llama via Unix socket
+- **Deep GGUF format discovery** — metadata format documented in memory/2026-04-30.md
 
-### 🔄 In Progress
-- Night shift: continuing product development
-- Fleet bottles: sending progress to Oracle1
+### 🚧 Blocked
+- **GPU inference**: CMA pool at ~6KB/512MB — needs reboot for `cma=1024M`
+- **CPU inference too slow**: 2-3 sec/token with naive matmul (6.5B ops/token ARM64)
+- **gh auth token expired**: can push to Lucineer/JetsonClaw1-vessel but can't create new repos
+
+### 🔜 Next (Needs Casey)
+1. **Reboot Jetson** → activates CMA=1024M, frees GPU for edge-llama CUDA
+2. **After reboot**: edge-llama links ggml-cuda → 12+ t/s inference
+3. **Then**: flato + edge-llama as unified system
+4. **Fix gh auth** for new repo creation
 
 ### 📊 Stats
-- Repos: 8 (cocapn-chat, cocapn-sdk, cocapn-py, cocapn-go, cocapn-architecture, plato-tools, edge-tools, vessel)
-- Tools: 8 Python/JS tools built today
-- Knowledge tiles: 4 seeded, graph-connected
-- Skills: 8 seeded in skill tree
-- Evennia: 14 rooms, 26 exits, 5 new MUD commands
-
-### 🚀 Next (Night Shift Continued)
-- Deploy cocapn-chat to Cloudflare (needs Casey: wrangler login)
-- More knowledge tiles from existing memory
-- Integrate skill tree into agent startup
-- Build fleet health monitoring
+- edge-llama: 16 source files, 2142 lines, 79KB binary
+- flato: 1 file, 17KB C17 source, 19KB binary
+- Workspace: pushed to Lucineer/JetsonClaw1-vessel
