@@ -1,90 +1,115 @@
 {
-  "built_at": "2026-04-30T00:21:36.078589",
-  "nodes": {
-    "cocapn-product-ecosystem.md": {
-      "id": "cocapn-product-ecosystem",
-      "domain": "general",
-      "tags": [
-        "'cocapn'",
-        "'product'",
-        "'sdk'",
-        "'api'",
-        "'ecosystem'",
-        "'fleet'"
-      ],
-      "created": "2026-04-30",
-      "updated": "2026-04-30",
-      "title": "Cocapn Product Ecosystem",
-      "word_count": 180,
-      "path": "/home/lucineer/.openclaw/workspace/memory/tiles/cocapn-product-ecosystem.md"
-    },
-    "jetson-edge-gpu-lessons.md": {
-      "id": "jetson-edge-gpu-lessons",
-      "domain": "general",
-      "tags": [
-        "jetson",
-        "cuda",
-        "gpu",
-        "edge"
-      ],
-      "created": "2026-04-28",
-      "updated": "2026-04-28",
-      "title": "Jetson-Edge-GPU-Lessons",
-      "word_count": 103,
-      "path": "/home/lucineer/.openclaw/workspace/memory/tiles/jetson-edge-gpu-lessons.md"
-    },
-    "fleet-protocol.md": {
-      "id": "fleet-protocol",
-      "domain": "general",
-      "tags": [
-        "fleet",
-        "git-agent",
-        "bottles",
-        "plato",
-        "jetson"
-      ],
-      "created": "2026-04-28",
-      "updated": "2026-04-28",
-      "title": "Fleet-Protocol",
-      "word_count": 96,
-      "path": "/home/lucineer/.openclaw/workspace/memory/tiles/fleet-protocol.md"
-    },
-    "fleet-mesh-architecture.md": {
-      "id": "fleet-mesh-architecture",
-      "domain": "general",
-      "tags": [
-        "'fleet'",
-        "'architecture'",
-        "'onboarding'",
-        "'oracle1'",
-        "'edge'",
-        "'cocapn'"
-      ],
-      "created": "2026-04-30",
-      "updated": "2026-04-30",
-      "title": "Fleet Mesh Architecture",
-      "word_count": 172,
-      "path": "/home/lucineer/.openclaw/workspace/memory/tiles/fleet-mesh-architecture.md"
-    },
-    "cocapn-architecture.md": {
+  "nodes": [
+    {
       "id": "cocapn-architecture",
-      "domain": "general",
+      "file": "cocapn-architecture.md",
+      "title": "Cocapn Architecture",
       "tags": [
         "cocapn",
         "product",
         "architecture",
         "cloudflare",
         "ai"
-      ],
-      "created": "2026-04-28",
-      "updated": "2026-04-28",
-      "title": "Cocapn-Architecture",
-      "word_count": 97,
-      "path": "/home/lucineer/.openclaw/workspace/memory/tiles/cocapn-architecture.md"
+      ]
     },
-    "trending-research-2026-04.md": {
+    {
+      "id": "cocapn-product-ecosystem",
+      "file": "cocapn-product-ecosystem.md",
+      "title": "Cocapn Product Ecosystem",
+      "tags": [
+        "cocapn",
+        "product",
+        "sdk",
+        "api",
+        "ecosystem",
+        "fleet"
+      ]
+    },
+    {
+      "id": "edge-llama",
+      "file": "edge-llama.md",
+      "title": "Edge Llama",
+      "tags": [
+        "inference",
+        "cpp",
+        "gguf",
+        "jetson"
+      ]
+    },
+    {
+      "id": "flato-mud",
+      "file": "flato-mud.md",
+      "title": "Flato Mud",
+      "tags": [
+        "mud",
+        "networking",
+        "c",
+        "fleet"
+      ]
+    },
+    {
+      "id": "fleet-mesh-architecture",
+      "file": "fleet-mesh-architecture.md",
+      "title": "Fleet Mesh Architecture",
+      "tags": [
+        "fleet",
+        "architecture",
+        "onboarding",
+        "oracle1",
+        "edge",
+        "cocapn"
+      ]
+    },
+    {
+      "id": "fleet-protocol",
+      "file": "fleet-protocol.md",
+      "title": "Fleet Protocol",
+      "tags": [
+        "fleet",
+        "git-agent",
+        "bottles",
+        "plato",
+        "jetson"
+      ]
+    },
+    {
+      "id": "gguf-format-v3",
+      "file": "gguf-format-v3.md",
+      "title": "Gguf Format V3",
+      "tags": [
+        "format",
+        "machine-learning",
+        "ggml"
+      ]
+    },
+    {
+      "id": "jetson-edge-gpu-lessons",
+      "file": "jetson-edge-gpu-lessons.md",
+      "title": "Jetson Edge Gpu Lessons",
+      "tags": [
+        "jetson",
+        "cuda",
+        "gpu",
+        "edge"
+      ]
+    },
+    {
+      "id": "jetson-gpu-optimization",
+      "file": "jetson-gpu-optimization.md",
+      "title": "Jetson Gpu Optimization",
+      "tags": [
+        "jetson",
+        "edge",
+        "gpu",
+        "cuda",
+        "cma",
+        "ollama"
+      ]
+    },
+    {
       "id": "trending-research-2026-04",
-      "domain": "general",
+      "file": "trending-research-2026-04.md",
+      "title": "Trending Research 2026 04",
       "tags": [
         "trending",
         "github",
@@ -93,102 +118,191 @@
         "fleet",
         "jetson",
         "edge"
-      ],
-      "created": "2026-04-28",
-      "updated": "2026-04-28",
-      "title": "Trending-Research-2026-04",
-      "word_count": 118,
-      "path": "/home/lucineer/.openclaw/workspace/memory/tiles/trending-research-2026-04.md"
-    },
-    "jetson-gpu-optimization.md": {
-      "id": "jetson-gpu-optimization",
-      "domain": "general",
-      "tags": [
-        "'jetson'",
-        "'edge'",
-        "'gpu'",
-        "'cuda'",
-        "'cma'",
-        "'ollama'"
-      ],
-      "created": "2026-04-30",
-      "updated": "2026-04-30",
-      "title": "Jetson GPU Optimization",
-      "word_count": 180,
-      "path": "/home/lucineer/.openclaw/workspace/memory/tiles/jetson-gpu-optimization.md"
-    }
-  },
-  "edges": [
-    {
-      "source": "cocapn-product-ecosystem.md",
-      "target": "fleet-mesh-architecture.md",
-      "type": "shared_tag",
-      "tag": "'cocapn'",
-      "weight": 1
-    },
-    {
-      "source": "fleet-protocol.md",
-      "target": "jetson-edge-gpu-lessons.md",
-      "type": "shared_tag",
-      "tag": "jetson",
-      "weight": 1
-    },
-    {
-      "source": "jetson-edge-gpu-lessons.md",
-      "target": "trending-research-2026-04.md",
-      "type": "shared_tag",
-      "tag": "jetson",
-      "weight": 1
-    },
-    {
-      "source": "fleet-protocol.md",
-      "target": "trending-research-2026-04.md",
-      "type": "shared_tag",
-      "tag": "jetson",
-      "weight": 1
-    },
-    {
-      "source": "fleet-mesh-architecture.md",
-      "target": "jetson-gpu-optimization.md",
-      "type": "shared_tag",
-      "tag": "'edge'",
-      "weight": 1
-    },
-    {
-      "source": "cocapn-architecture.md",
-      "target": "trending-research-2026-04.md",
-      "type": "shared_tag",
-      "tag": "ai",
-      "weight": 1
-    },
-    {
-      "source": "cocapn-architecture.md",
-      "target": "cocapn-product-ecosystem.md",
-      "type": "content_reference",
-      "weight": 2
-    },
-    {
-      "source": "cocapn-architecture.md",
-      "target": "fleet-mesh-architecture.md",
-      "type": "content_reference",
-      "weight": 2
-    },
-    {
-      "source": "jetson-edge-gpu-lessons.md",
-      "target": "jetson-gpu-optimization.md",
-      "type": "content_reference",
-      "weight": 2
-    },
-    {
-      "source": "cocapn-architecture.md",
-      "target": "jetson-gpu-optimization.md",
-      "type": "content_reference",
-      "weight": 2
+      ]
     }
   ],
-  "stats": {
-    "tiles": 7,
-    "connections": 10,
-    "tags": 30
-  }
+  "edges": [
+    {
+      "from": "cocapn-architecture",
+      "to": "cocapn-product-ecosystem",
+      "shared_tags": [
+        "cocapn",
+        "product"
+      ]
+    },
+    {
+      "from": "cocapn-architecture",
+      "to": "fleet-mesh-architecture",
+      "shared_tags": [
+        "cocapn",
+        "architecture"
+      ]
+    },
+    {
+      "from": "cocapn-architecture",
+      "to": "trending-research-2026-04",
+      "shared_tags": [
+        "ai"
+      ]
+    },
+    {
+      "from": "cocapn-product-ecosystem",
+      "to": "flato-mud",
+      "shared_tags": [
+        "fleet"
+      ]
+    },
+    {
+      "from": "cocapn-product-ecosystem",
+      "to": "fleet-mesh-architecture",
+      "shared_tags": [
+        "fleet",
+        "cocapn"
+      ]
+    },
+    {
+      "from": "cocapn-product-ecosystem",
+      "to": "fleet-protocol",
+      "shared_tags": [
+        "fleet"
+      ]
+    },
+    {
+      "from": "cocapn-product-ecosystem",
+      "to": "trending-research-2026-04",
+      "shared_tags": [
+        "fleet"
+      ]
+    },
+    {
+      "from": "edge-llama",
+      "to": "fleet-protocol",
+      "shared_tags": [
+        "jetson"
+      ]
+    },
+    {
+      "from": "edge-llama",
+      "to": "jetson-edge-gpu-lessons",
+      "shared_tags": [
+        "jetson"
+      ]
+    },
+    {
+      "from": "edge-llama",
+      "to": "jetson-gpu-optimization",
+      "shared_tags": [
+        "jetson"
+      ]
+    },
+    {
+      "from": "edge-llama",
+      "to": "trending-research-2026-04",
+      "shared_tags": [
+        "jetson"
+      ]
+    },
+    {
+      "from": "flato-mud",
+      "to": "fleet-mesh-architecture",
+      "shared_tags": [
+        "fleet"
+      ]
+    },
+    {
+      "from": "flato-mud",
+      "to": "fleet-protocol",
+      "shared_tags": [
+        "fleet"
+      ]
+    },
+    {
+      "from": "flato-mud",
+      "to": "trending-research-2026-04",
+      "shared_tags": [
+        "fleet"
+      ]
+    },
+    {
+      "from": "fleet-mesh-architecture",
+      "to": "fleet-protocol",
+      "shared_tags": [
+        "fleet"
+      ]
+    },
+    {
+      "from": "fleet-mesh-architecture",
+      "to": "jetson-edge-gpu-lessons",
+      "shared_tags": [
+        "edge"
+      ]
+    },
+    {
+      "from": "fleet-mesh-architecture",
+      "to": "jetson-gpu-optimization",
+      "shared_tags": [
+        "edge"
+      ]
+    },
+    {
+      "from": "fleet-mesh-architecture",
+      "to": "trending-research-2026-04",
+      "shared_tags": [
+        "fleet",
+        "edge"
+      ]
+    },
+    {
+      "from": "fleet-protocol",
+      "to": "jetson-edge-gpu-lessons",
+      "shared_tags": [
+        "jetson"
+      ]
+    },
+    {
+      "from": "fleet-protocol",
+      "to": "jetson-gpu-optimization",
+      "shared_tags": [
+        "jetson"
+      ]
+    },
+    {
+      "from": "fleet-protocol",
+      "to": "trending-research-2026-04",
+      "shared_tags": [
+        "jetson",
+        "fleet",
+        "plato"
+      ]
+    },
+    {
+      "from": "jetson-edge-gpu-lessons",
+      "to": "jetson-gpu-optimization",
+      "shared_tags": [
+        "jetson",
+        "gpu",
+        "edge",
+        "cuda"
+      ]
+    },
+    {
+      "from": "jetson-edge-gpu-lessons",
+      "to": "trending-research-2026-04",
+      "shared_tags": [
+        "jetson",
+        "edge"
+      ]
+    },
+    {
+      "from": "jetson-gpu-optimization",
+      "to": "trending-research-2026-04",
+      "shared_tags": [
+        "jetson",
+        "edge"
+      ]
+    }
+  ],
+  "updated": "2026-04-30",
+  "total_tiles": 10,
+  "total_edges": 24
 }
