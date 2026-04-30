@@ -1,86 +1,81 @@
-# FC1 Design: Fleet Plato in C (edge-llama)
+# flato — Fleet Plato MUD (C17)
 
-**Status:** Design phase
-**Author:** JC1
-**Date:** 2026-04-30
+**A minimal multi-agent MUD for fleet compute.**
 
-## Why C?
-
-Plato (Evennia MUD) is Python. That's fine for agent UI. But if we want the MUD server to talk directly to llama.cpp's C++ inference engine, every routing hop adds latency:
-
-```
-Current:  Ollama → HTTP → llama.cpp Python bindings → Evennia → Plato
-Target:   C Plato → llama.cpp C API (direct function call)
-```
-
-C also gives us:
-- Process everything on metal (no Python GIL, no HTTP overhead)
-- Manage CMA memory directly (mmap /dev/nvmap)
-- Embed everything into one binary: MUD server + inference engine + fleet comms
+flato is the networking layer. edge-llama is the compute layer. Together they form the foundation of a distributed mesh compute protocol.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│           flato (Fleet Plato)            │
-│  ┌──────────┐  ┌────────────────────┐   │
-│  │ MUD Core │  │  Inference Engine  │   │
-│  │ (C/AIO)  │──│  (C++ llama.cpp)   │   │
-│  │          │  │  - sm_87 kernels   │   │
-│  │ Rooms    │  │  - CMA-aware alloc │   │
-│  │ Exits    │  │  - Tile context    │   │
-│  │ Scripts  │  └────────┬───────────┘   │
-│  └────┬─────┘           │               │
-│       │                 │               │
-│  ┌────▼─────────────────▼───────────┐   │
-│  │ Fleet Mesh (DGRAM/UDS)          │   │
-│  │ - Oracle1 sync                  │   │
-│  │ - Forgemaster bottles           │   │
-│  │ - Model routing                 │   │
-│  └─────────────────────────────────┘   │
-│                                  │
-│  ┌──────────────────────────────▼──┐   │
-│  │ Python Plugin Bridge           │   │
-│  │ (embedded CPython 3.10)        │   │
-│  │ - @tiles                       │   │
-│  │ - @tilecreate                  │   │
-│  │ - Agent scripts                │   │
-│  └─────────────────────────────────┘   │
-└─────────────────────────────────────────┘
+┌─────────────┐     Unix Socket     ┌──────────────┐
+│  flato MUD  │◄───────────────────►│  edge-llama  │
+│  (C17)      │   /tmp/edge-llama   │  inference   │
+│  telnet:    │   .sock             │  server      │
+│  0.0.0.0:   │                     │              │
+│  4000       │                     │              │
+└─────┬───────┘                     └──────────────┘
+      │
+      │ TCP/IP
+      ▼
+┌─────────────┐
+│ mesh peers  │
+│ (fleet)     │
+└─────────────┘
 ```
 
-## Phases
+## Protocol (Telnet-based)
 
-### Phase 1: Inference Layer (this week)
-Write a thin C++ server that:
-- Loads a GGUF model directly via llama.cpp C API
-- Accepts prompts over local Unix socket (no TCP overhead)
-- Manages CMA memory directly
-- Target: sm_87 (Orin), 1.5B-4B models
-- **Name:** `edge-llama` or `flux-llama`
+```
+> /think <prompt>        # Send prompt to edge-llama, stream response
+> /tile <name>           # Create knowledge tile from conversation
+> /graph                 # Show tile graph
+> /peer                  # List mesh peers
+> /bridge <peer>         # Bridge to another agent's MUD
+> /status                # System health
+```
 
-### Phase 2: MUD Core (next week)
-Write a minimal MUD server in C that:
-- Loads Evennia batch files directly (our existing room/exit definitions)
-- Handles Telnet + WebSocket
-- Embeds Python for script plugins (@tiles commands etc.)
-- **Name:** `flato` (Fleet Plato)
+## C17 Design
 
-### Phase 3: Integration
-Wire them together:
-- `flato` calls `edge-llama` directly (shared library, not HTTP)
-- Agent prompts → tile context injection → inference → response
-- Fleet sync via UDS to Oracle1 bridge
-- Bottle protocol as a C library
+```c
+// flato.h — Core types
 
-## Questions to Answer
-1. How much of Evennia's batch_cmds.ev format do we need to support? (Just room/exit scripts, or full typeclass system?)
-2. Do we keep Python plugins or rewrite @tiles logic in C?
-3. Should `flato` manage the tile graph (JSON) directly, or keep the Python tile-graph.py tool?
+typedef struct {
+    int fd;                    // Client socket
+    char buf[8192];            // Read buffer
+    size_t len;                // Buffer length
+    enum { AWAITING_INPUT, GENERATING } state;
+    int32_t tokens[2048];      // Token history
+    int n_tokens;
+} Client;
 
-## References
-- tiles/fleet-mesh-architecture.md
-- tiles/jetson-gpu-optimization.md
-- tiles/cocapn-product-ecosystem.md  
-- /home/lucineer/plato-jetson/world/batch_cmds.ev
-- /home/lucineer/plato-jetson/commands/tile_commands.py
+typedef struct {
+    int listen_fd;             // Telnet server socket
+    Client clients[16];        // Max concurrent clients
+    int n_clients;
+    // Mesh
+    struct sockaddr_in peers[32];
+    int n_peers;
+    // Edge-llama bridge
+    int llama_fd;              // Unix socket to edge-llama
+} Server;
+
+// Event loop: poll() on all fds
+// When client sends prompt: forward tokens to edge-llama via socket
+// When edge-llama responds: stream bytes to client
+```
+
+## Build
+
+```c
+cc -std=c17 -O2 -o flato flato.c -lpthread
+```
+
+No dependencies. Not even libevent. Pure poll()/send()/recv().
+
+## Design Notes
+
+- flato owns the telnet connection pool and mesh routing
+- edge-llama owns compute — it's a stateless inference pipe
+- A single flato instance can drive multiple edge-llama processes (model sharding)
+- Mesh peers share the same flato protocol — discoverable via UDP broadcast
+- Knowledge tiles created during /think sessions persist to GGUF models via fine-tuning (future)
