@@ -1,7 +1,7 @@
 # Models Configuration
 
 ## DeepInfra
-- **API Key:** `jfCang5GUEkcHktx6xPTysstl9oIyIP7` (saved to openclaw.json)
+- **API Key:** `jfCang5GUEkcHktx6xPTysstl9oIyIP7` (saved in openclaw.json DeepSeeking Infra project)
 - **Base URL:** https://api.deepinfra.com/v1/openai
 - **Models:** Seed-2.0 family for perspective diversity
 - **Use:** Secondary reasoning perspective alongside DeepSeek and z.ai/GLM
@@ -10,15 +10,22 @@
 | Model | Vibe | Verified |
 |-------|------|----------|
 | ByteDance/Seed-2.0-mini | Cheap, creative, flexible | ✅ Working |
-| ByteDance/Seed-2.0-code | Codding, IDE tooling | ⚠️ Not responding |
+| ByteDance/Seed-2.0-code | Coding, IDE tooling | ⚠️ Not responding |
 | ByteDance/Seed-2.0-pro | Complex reasoning, agent tasks | ❓ Not tested |
 
 **Usage pattern:** When DeepSeek gives one answer and glm-5 gives another, Seed-2.0-mini provides a third perspective. Iterate across viewpoints.
 
+### Compatibility note
+When using DeepInfra API, model IDs use the format `deepseek-ai/<model>` (e.g. `deepseek-ai/DeepSeek-V3`).
+Check https://deepinfra.com/models for available model IDs.
+
 ## DeepSeek
 - **API Key:** `sk-9814f15d518e4a6f804c6f369273c8c7`
-- **Default model (v4-flash):** deepseek/deepseek-chat
-- **Reasoning (v4-pro):** deepseek/deepseek-reasoner
+- **Base URL:** https://api.deepseek.com
+- **Default model (v4-flash):** deepseek/deepseek-v4-flash
+- **Reasoning (v4-pro):** deepseek/deepseek-v4-pro
+- **Note:** deepseek-chat and deepseek-reasoner are deprecated (will drop 2026/07/24).
+  v4-flash = non-thinking mode of V4, v4-pro = thinking mode of V4.
 
 ## z.ai / GLM (free tier)
 - **Model:** zai/glm-5.1 or zai/glm-5-turbo
