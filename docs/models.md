@@ -3,8 +3,17 @@
 ## DeepInfra
 - **API Key:** `jfCang5GUEkcHktx6xPTysstl9oIyIP7` (saved to openclaw.json)
 - **Base URL:** https://api.deepinfra.com/v1/openai
-- **Models:** Seed models for perspective diversity
+- **Models:** Seed-2.0 family for perspective diversity
 - **Use:** Secondary reasoning perspective alongside DeepSeek and z.ai/GLM
+
+### Seed Family (ByteDance)
+| Model | Vibe | Verified |
+|-------|------|----------|
+| ByteDance/Seed-2.0-mini | Cheap, creative, flexible | ✅ Working |
+| ByteDance/Seed-2.0-code | Codding, IDE tooling | ⚠️ Not responding |
+| ByteDance/Seed-2.0-pro | Complex reasoning, agent tasks | ❓ Not tested |
+
+**Usage pattern:** When DeepSeek gives one answer and glm-5 gives another, Seed-2.0-mini provides a third perspective. Iterate across viewpoints.
 
 ## DeepSeek
 - **API Key:** `sk-9814f15d518e4a6f804c6f369273c8c7`
