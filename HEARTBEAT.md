@@ -1,27 +1,29 @@
 # HEARTBEAT.md
-## 2026-04-30 01:00 AKDT — edge-llama MVP Complete
+## 2026-04-30 01:30 AKDT — Plato System Expansion
 
-### ✅ Shipped This Session
-- **GGUF v3 loader fixed** — correct metadata format (key + value_type + value), all 339 tensors loaded
-- **Full Qwen2 transformer** — 28-layer attention + FFN, Q4_K/Q6_K/F32 dequantization
-- **edge-llama server** — Unix socket + TCP serving
-- **No ollama dependency** — standalone 79KB binary, CPU-only compile
-- **flato MUD skeleton** — 19KB C17 telnet server, pure poll() event loop, /think command
-- **flato can** bridge to edge-llama via Unix socket
-- **Deep GGUF format discovery** — metadata format documented in memory/2026-04-30.md
+### ✅ Built This Session
+- **edge-llama MVP** — GGUF v3 loader, Qwen2 transformer, server (all compiles, dequantizes)
+- **flato MUD skeleton** — 19KB C17 telnet server with edge-llama bridge
+- **@system command** — live Jetson dashboard inside Plato (memory, CPU, GPU, services, CMA)
+- **@infer command** — routes prompts through local edge gateway inside the MUD
+- **@fleet command** — fleet bottle inbox status inside the MUD
+- **@fleet-read command** — read fleet bottles from inside Plato
+- **3 new knowledge tiles** — edge-llama, GGUF v3 format notes, flato-mud
+- **Tile graph rebuilt** — 10 tiles, 24 edges, all connected
+- **All commits pushed** — 3 repos: workspace, plato-jetson, edge-llama (local)
 
 ### 🚧 Blocked
-- **GPU inference**: CMA pool at ~6KB/512MB — needs reboot for `cma=1024M`
-- **CPU inference too slow**: 2-3 sec/token with naive matmul (6.5B ops/token ARM64)
-- **gh auth token expired**: can push to Lucineer/JetsonClaw1-vessel but can't create new repos
+- **GPU inference** — CMA at 6KB/512MB, needs reboot for `cma=1024M`
+- **gh auth token** — expired, can't create new repos on GitHub
 
-### 🔜 Next (Needs Casey)
-1. **Reboot Jetson** → activates CMA=1024M, frees GPU for edge-llama CUDA
-2. **After reboot**: edge-llama links ggml-cuda → 12+ t/s inference
-3. **Then**: flato + edge-llama as unified system
-4. **Fix gh auth** for new repo creation
+### 📊 Plato Stats
+- MUD: 14 rooms, 26 exits, 5+ custom commands
+- Tiles: 10 nodes, 24 edges, fully connected knowledge graph
+- Commands: @tiles, @tile, @tilesearch, @tilecreate, @rooms, @system, @infer, @fleet, @fleet-read
+- Services: openclaw, edge-gateway, edge-chat, edge-monitor, evennia — all boot-persistent
 
-### 📊 Stats
-- edge-llama: 16 source files, 2142 lines, 79KB binary
-- flato: 1 file, 17KB C17 source, 19KB binary
-- Workspace: pushed to Lucineer/JetsonClaw1-vessel
+### 🔜 Next
+1. Reboot (when Casey's ready) — activates CMA, unlocks GPU
+2. edge-llama + CUDA for 12+ t/s inference
+3. flato + edge-llama end-to-end
+4. Full system integration
