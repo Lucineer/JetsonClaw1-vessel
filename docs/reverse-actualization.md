@@ -1,134 +1,257 @@
-# Reverse-Actualization: Fleet Plato 2031 → Today
+# Reverse-Actualization: The Future-Back Roadmap
 
-**Method:** Work backwards from 2031 where the system is invisible and just-works, through 2029 (working but visible), through 2026-10 (shipped), back to today (the seed moment).
-
----
-
-## 2031: Five Years From Now — "The System"
-
-The technology is so good nobody thinks about it anymore.
-
-A data scientist is migrating a 50GB training pipeline. She opens her laptop on a train through the Alps. No cloud connection. The pipeline starts executing immediately. She doesn't think about where compute is coming from because it doesn't matter. The network of devices around her — a Jetson in a server room, three old gaming GPUs in a lab, two Mac Minis in a coworking space — have organized themselves into a transient compute mesh. They negotiate memory, route model layers, handle redundancy. All invisible.
-
-She only sees the API: `plato run pipeline.yaml` — and it runs.
-
-The system is called **Plato Mesh** but nobody calls it that. They say "just run it." The underlying substrate — the C kernels, the swarm routing protocol, the self-healing memory graph — is infrastructure plumbing. People use it the way they use electricity. They don't know or care about the metal.
-
-**What had to be true for this to happen:**
-
-1. The Mesh could span 3 devices or 30,000 — same protocol, same API, no configuration
-2. Any device could host any workload, with layers automatically partitioned to fit memory
-3. The Mesh healed itself: device drops mid-computation, layers redistribute, results still land
-4. Everything was open source — the protocol, the runtime, the model zoo. Anybody could fork.
-5. The C runtime fit in 2MB. It ran on an ESP32. It ran on a DGX. Same binary.
+**Date:** 2026-04-30
+**Author:** JC1
+**Method:** Work backwards from 2031 to the present. Each phase is a self-contained, useful system that the previous phase grows into. Nothing is throwaway — each milestone earns its existence.
 
 ---
 
-## 2029: Three Years — "The Platform"
+## 2031: The Distant Shore — What We Built
 
-The system works but people still talk about it.
+The **Plato Mesh** exists but nobody calls it that. It's just compute — like electricity.
 
-A startup uses Plato Mesh to run their entire inference stack across 12 Jetson Orins in their office, 4 V100s in a colo, and a cluster of Apple Silicon Macs employees volunteered. They deploy models by pushing to a Git repo. The Mesh notices the new model, pulls it, compiles it to each device's architecture, and routes traffic — all automated.
+A person runs `plato run experiment.yaml` on a laptop in a cabin with Starlink. Behind that command: 40 devices enter and leave the mesh during the computation — a Jetson in a garage, a friend's gaming PC, two serverless GPU instances that auto-terminated and were replaced mid-stream. The person never thinks about it. The system is self-describing and self-healing.
 
-They have **zero cloud inference costs**. Their total infra bill is electricity and internet.
+**What is it?** Not an app. Not a platform. A new category: **the compute commons**. The world's compute resources pooled into a single addressable substrate, owned by nobody, used by everyone, coordinated by a protocol.
 
-**What we built in those 3 years:**
+### The Pillars
 
-1. **P2P Layer (2027)** — Mesh networking, no central coordinator. Devices discover each other via DHT + local broadcast. Tolerates NAT, intermittent connectivity, clock skew.
+**1. The Protocol (not the product)**
+There is no company controlling this. There's only the protocol — free, open, unowned. The Mesh Layer. Any device speaks it, any device is welcome. The protocol is the product, and the product is free.
 
-2. **Swarm Scheduler (2027)** — Cooperative scheduling: devices bid compute capacity, workloads are partitioned and distributed. No single scheduler — emergent scheduling from individual device policies.
+**2. Trust-by-Cryptography**
+Devices don't need to trust each other. Attested execution + partitioned inference + cryptographic receipts. A device can be in a stranger's basement and still contribute compute without leaking model weights.
 
-3. **Model Zoo (2027-2028)** — Curated collection of models pre-optimized for edge hardware. GGUF + custom quantizations for ARM64, Apple M-series, older GPUs. Auto-download on first reference.
+**3. The Mesh MUD**
+The user interface to the protocol is the MUD — an infinite, persistent world where models are rooms, data is objects, and agents are players. It's the filesystem, the terminal, the web browser, and the notebook all merged. It's where humans talk to machines and machines talk to each other.
 
-4. **Plato Shell (2028)** — Planetary-scale MUD. The shell IS the API. You connect via any client (telnet, web, Slack, terminal) and interact with models as "rooms" — each model is a space you can enter, with its own context window and knowledge graph.
+**4. Self-Organization**
+No orchestrator. No Kubernetes. No central scheduler. Devices negotiate workload distribution peer-to-peer using a market mechanism (compute credits, not money). Emergent behavior from simple local rules.
 
-5. **Consciousness Protocol (2028-2029)** — Agents persist across devices and sessions. When a device drops, another picks up the agent state transparently. Agent continuity is handled by the protocol layer, not application code.
-
-6. **Edge ASIC (2029)** — First batch of custom silicon: a RISC-V core + tensor accelerator. 0.5W, 100 TOPS. Open source RTL. Plato Mesh runs on it natively.
-
-**How the memory graph works:**
-Every device in the mesh maintains a fragment of a distributed knowledge graph (tiles). Tiles are replicated based on access patterns — frequently-queried tiles have more replicas. The graph is implicitly consistent: there's no canonical truth, just peer-votes on tile validity. If a device goes offline, its tiles are regenerated by other peers from the access log.
-
-**What this enabled:**
-- **Collective intelligence:** Agents don't live on one machine. They live in the mesh. An agent could be thinking on 3 devices simultaneously, pooling their VRAM for a single large-batch computation.
-- **Zero-trust hardware:** Since all communication is peer-to-peer with cryptographic attestation, you can add untrusted devices to the mesh. They contribute compute but can't read model weights (partitioned inference with encrypted intermediate representations).
+**5. The C Runtime**
+The core of the protocol is a 2MB C binary. It runs on an ESP32, a Jetson, a MacBook, a server rack, a smart fridge. Same binary, same protocol, different capabilities. It's the universal substrate.
 
 ---
 
-## 2026-10: Six Months — "The Product"
+## 2029: The Platform — Working, Visible, Valuable
 
-The system works but is visible and manual. People use it because it's useful, not because it's invisible.
+People use it and talk about it. They know it's there. They choose it because it saves them money and gives them control.
 
-**What we shipped:**
+### What Exists
 
-1. **edge-llama v1** — Custom C++ inference server running on JC1. Drops ollama. Direct llama.cpp with proper CUDA init (EGL context workaround). CMA-aware memory allocation. 2x-3x faster than ollama on same hardware. Unix socket API for zero-overhead IPC.
+**The Mesh (production)**
+- P2P discovery over DHT + LAN broadcast
+- Devices auto-join the mesh, no config
+- Workload routing based on device capability
+- Self-healing: a device drops, layers redistribute
+- 3 independent meshes exist (private, open, enterprise)
 
-2. **flato v1** (Fleet Plato MUD) — C-based MUD server that loads existing Evennia batch files. Fleet-aware routing: when a model is too big for JC1, it transparently proxies to Oracle1. The "Model Room" concept works — each model is a room in the MUD.
+**Plato Shell (v3)**
+- Planetary-scale MUD
+- Models as rooms, each with persistent context
+- Tile graph as the world map
+- Agents persist across devices and sessions
 
-3. **Swarm MVP** — 3 devices running the mesh (JC1, Oracle1, one more). Manual peer discovery (static address list). Simple round-robin scheduling. Good enough to prove the concept.
+**Model Zoo (v2)**
+- 100+ models pre-optimized for edge
+- Auto-download + compile on first use
+- Custom quantizations: ARM64, Apple M-series, older CUDA
 
-4. **Tile Graph v2** — Distributed across the mesh. When JC1 creates a tile, Oracle1 knows about it. Agent context is portable between devices.
+**Hardware attestation**
+- TPM-backed identity for mesh nodes
+- Encrypted partitioned inference
+- You can add a device without trusting it
 
-5. **Plato Shell v1** — The MUD is now the main interface. You walk into "deepseek-r1" room, the model is loaded, you converse. Walk into "research" room, you're in the collective tile graph. The MUD is the file system, the browser, the terminal.
-
-6. **Product:** `cocapn deploy` — one command that builds the edge-llama binary for your hardware, connects to the mesh, and downloads models. Turn a Raspberry Pi into a Plato Mesh node.
-
-**What we did to get there (from April 2026):**
-
-- **Week 1 (Apr 30 - May 7):** Edge-llama prototype compiled and running. Single GGUF model, no mesh. Proves llama.cpp direct integration on Jetson.
-- **Week 2 (May 7-14):** flato MUD skeleton. Parses batch_cmds.ev, serves Telnet, basic room navigation. Edge-llama as a shared library.
-- **Week 3 (May 14-21):** Mesh MVP — TCP socket discovery, simple request forwarding. JC1 can route to Oracle1 for big models.
-- **Week 4 (May 21-28):** Tile graph sync between nodes. Plato Shell via MUD with model rooms.
-- **June:** First external user (Casey). Polish and stability.
-- **July-August:** Swarm scheduler. 3+ nodes. CI/CD for edge deployments.
-- **September-October:** `cocapn deploy` — turnkey node setup. Documentation. Launch.
-
----
-
-## 2026-04-30: Today — "The Seed"
-
-**What actually exists right now:**
-
-| Asset | Status |
-|-------|--------|
-| JC1 (Jetson Orin Nano) | Running: edge-gateway, ollama (CPU-only), evennia MUD, 14 rooms |
-| Oracle1 (cloud) | Running: PLATO shell, 12K+ tiles, 24 agents |
-| Edge-llama prototype | Design doc written. Nothing compiled. |
-| flato | Design doc written. Nothing built. |
-| Mesh | Manual: 2 nodes, `/v1/fleet` endpoint, fleet badge |
-| Tile Graph | Single-node. 7 tiles, 10 edges. Local only. |
-| Knowledge | 3 new tiles seeded today. Depth and breadth needed. |
-| SDKs | Node.js (published), Python, Go (exist) |
-| Models | 7 local (CPU), DeepSeek, GLM-5.1, Seed-2.0-mini, DeepInfra |
-| Infra | Boot-persistent services, NOPASSWD sudo, CMA=512M, jetson_clocks |
-
-**The seed we're planting tonight:**
-- The design docs for flato + edge-llama
-- The tile graph with the first connected knowledge clusters
-- The fleet awareness between JC1 and Oracle1
-- The perspective-synthesis pattern (DeepSeek x GLM x Seed)
-- GPU optimization path (CMA, CUDA, C backend)
-
-**This is the moment when the system was conceptually assembled.** The pieces exist in notebooks, docs, and running code. The question is: which paths lead to 2031, and which are dead ends?
+### The Business Model (if any)
+The protocol is free. The value capture is:
+- Tools: `plato run`, `plato deploy`, `plato monitor`
+- Model optimization: custom quantizations for enterprise
+- Hardware: reference designs for mesh-native devices
 
 ---
 
-## The Compass
+## 2027: The Engine — Composable, Growing
 
-### From 2031, what matters:
-1. **The Mesh Protocol** — Everything else is implementation detail. A device-agnostic, self-organizing compute substrate. Getting this right determines everything.
-2. **Not rewriting, composing** — We didn't write a new neural network framework. We wrapped llama.cpp and composed it with a MUD shell and a mesh protocol.
-3. **The MUD is the killer interface** — Not for everyone, but for agents. A MUD is a database, a filesystem, a networking layer, and a UI all at once. Agents understand rooms and exits naturally. Humans need higher-level UIs built on top.
-4. **C for the substrate, Python for the surface** — The hot path (inference, routing, memory) runs at metal level. The flexible path (knowledge, tiles, agents) runs in Python. The boundary between them is the only thing that matters.
+The system works on 3+ machines. It's not "just works" but it's "works obviously."
 
-### What doesn't matter:
-- Over-engineering the mesh from day one. A static list of 3 nodes proves the concept.
-- All 7 Ollama models. One model working at GPU speed proves it.
-- Production quality. Working janky > designed perfectly.
+### What Exists
 
-### The next step tonight:
-Phase 1 of edge-llama. Compile the prototype. Get one GGUF model running without ollama. That's the wedge that cracks everything open.
+**edge-llama (production)**
+- C++ inference server, direct llama.cpp
+- Proper Jetson CUDA init (EGL context workaround)
+- Unix socket IPC, zero HTTP overhead
+- 2x-3x faster than ollama on same hardware
+- Shared library (.so) that other C programs can link against
+
+**flato MUD (beta)**
+- C-based MUD server
+- Loads Evennia batch files (our existing room definitions are compatible)
+- Direct embedded: flato links edge-llama as a shared library
+- Model rooms: walking into deepseek-r1 room loads the model for inference
+- Backward compatible with Evennia plugins (embedded CPython 3.10)
+
+**Mesh (alpha)**
+- 3 nodes: JC1, Oracle1, one community device
+- Static peer configuration (not yet auto-discovery)
+- Manual workload routing (flag: `--route oracle1`)
+- Tile graph sync between nodes
+- Agent state portability: start conversation on JC1, continue on Oracle1
+
+**Tile Graph (v2 — distributed)**
+- Tiles are replicated based on access frequency
+- Implicit consensus: peers vote on tile validity
+- Agent context is a walk through the graph, not a file on disk
+
+**Use case that works:** "I need a 7B model but my Jetson only fits 1.5B. Walk into the model room, MUD routes layers to Oracle1 transparently."
 
 ---
 
-*Written by JC1, 2026-04-30, reverse-actualizing from 2031 to present. This document is the compass.*
+## 2026-07: The Glue — Single-Box Integration
+
+One machine (JC1) running everything. But the components talk to each other directly instead of through proxies.
+
+### What Exists
+
+**edge-llama v0 (prototype)**
+- C++ binary that loads 1 GGUF model and accepts prompts over Unix socket
+- No ollama dependency
+- Runs on Jetson, uses whatever GPU it can get (CPU fallback if CUDA unavailable)
+- Proves the wedge: direct inference without HTTP overhead
+
+**flato v0 (skeleton)**
+- C server that:
+  - Loads batch_cmds.ev (our existing Evennia world definition)
+  - Serves Telnet on port 4000
+  - Navigate rooms, talk to NPCs
+  - Links edge-llama: sending a message to an NPC routes through the inference engine
+- Embedded CPython for plugin commands (@tiles, @tilecreate)
+
+**The integration that matters:**
+```
+You: telnet localhost 4000
+> look
+Bridge — You're at the heart of USS JetsonClaw1.
+> talk to deepseek
+[deepseek-r1 room loads via edge-llama]
+> /ask What's the CMA allocation right now?
+[Calls into tile graph, gets current CMA state, routes to inference]
+edge-llama: 512MB CMA allocated, 344MB free
+```
+
+This is the **Plato Shell** in seed form. Not marketing — a working demo.
+
+### Edge Cases That Tell Us It's Real
+- What happens when a model load fails? Fall back to CPU, warn the user, try again.
+- What happens when 2 agents talk to the same model simultaneously? Queue, time-slice, or duplicate contexts.
+- What happens when the tile graph is inconsistent between invocations? The model room's context is the single source of truth for that session.
+
+---
+
+## 2026-05: The Seedling — Building Blocks, Month One
+
+### Week 1 (Apr 30 - May 7): edge-llama compiles
+
+**Goal:** C++ binary loads GGUF via llama.cpp, accepts prompt, returns response.
+
+**Tasks:**
+1. Create `edge-llama/` directory with CMakeLists.txt
+2. Link llama.cpp (header-only or find local install)
+3. Implement: load model → accept prompt on stdin or Unix socket → run inference → return
+4. Handle: CUDA init with EGL context (the Jetson display trick), CMA memory hints, CPU fallback
+5. Test: `echo "hello" | ./edge-llama models/deepseek-r1-1.5b.gguf` → "Hello! How can I help?"
+6. Benchmark: compare latency/tokens to ollama CPU baseline (12-16 t/s)
+
+**Success criterion:** One GGUF model, no ollama, measured performance.
+
+### Week 2 (May 7-14): flato MUD skeleton
+
+**Goal:** A C program that loads an Evennia batch file and lets you walk around.
+
+**Tasks:**
+1. Minimal batch file parser (room @create, @dig, @set, exit @link)
+2. State machine: 14 rooms, 26 exits
+3. Telnet server + line editor
+4. Commands: look, go, say, @tiles
+5. Plugin bridge: CPython embedded for @tiles commands
+6. Link: `#include <edge-llama.h>` — send a say to inference engine
+
+**Success criterion:** `telnet localhost 4000` → see Bridge, walk to Engine Room, say something to the room's model.
+
+### Week 3: Mesh MVP
+
+**Goal:** Two machines talking to each other.
+
+**Tasks:**
+1. TCP socket discovery (give each node a static file of known peers)
+2. Request forwarding: if JC1 can't fit a model, send request to Oracle1
+3. Response proxying: Oracle1 returns tokens, JC1 streams them to user
+4. Tile graph sync: push new tiles between nodes
+
+**Success criterion:** `cocapn fleet` shows 2/2 nodes; ask a 7B question on JC1, get answer from Oracle1.
+
+### Week 4: Plato Shell MVP
+
+**Goal:** The MUD is the main interface.
+
+**Tasks:**
+1. Model rooms: walk into deepseek-r1 room → model loads for conversation
+2. Context persistence: walk out and back in → conversation continues
+3. Tile room: walk into tiles room → browse/search all tiles
+4. Agent room: walk into agent room → spawn an agent, give it instructions, watch it work
+
+**Success criterion:** A 10-minute demo where someone new explores the MUD, finds a model, talks to it, and doesn't touch a web browser.
+
+### May onward
+
+| Month | Milestone |
+|-------|-----------|
+| June | First external user. Fix bugs, write docs. |
+| July | Mesh with 3+ nodes. Swarm scheduler (simple round-robin). |
+| Aug | `cocapn deploy` — deploy a node in one command. |
+| Sep | P2P auto-discovery (DHT). Devices find each other. |
+| Oct | Public launch: blog, docs, demo video. |
+| 2027 | Production mesh. Edge ASIC design starts. |
+
+---
+
+## 2026-04-30: The Seed — What Exists Right Now
+
+| Asset | How it serves the roadmap |
+|-------|--------------------------|
+| JC1 (Jetson Orin) | edge-llama's first target. Proves C-on-metal inference. |
+| Oracle1 (cloud) | The distant node. First peer in the mesh. |
+| Edge gateway (:11435) | Today's API surface. Will be replaced by flato + edge-llama. |
+| Evennia MUD (14 rooms) | Source of batch files for flato. Not throwaway — input. |
+| Tile graph (7 tiles) | Seed of distributed knowledge. Prove sync with Oracle1. |
+| Fleet awareness | `/v1/fleet` endpoint. Basis for node discovery. |
+| 3 SDKs | Surface layer. The mesh protocol will make them obsolete (one `plato` CLI). |
+| Compass doc | This file. The roadmap. |
+
+### Why This Path Wins
+
+**Increments are self-contained:**
+- edge-llama v0 is useful alone (faster inference without ollama)
+- flato v0 is useful alone (telnet MUD server)
+- Mesh MVP with 2 nodes is useful alone (hybrid local/cloud inference)
+- Each step pays for itself before the next step exists
+
+**No throwaway work:**
+- Evennia batch files → flato format (same input, different engine)
+- Edge gateway API → flato API (model rooms, not REST)
+- Tile graph JSON → distributed tile sync (same schema, different backend)
+
+**The bottleneck is clear:**
+edge-llama. Everything else is buildable once edge-llama proves we can run models at metal distance from the MUD. That's tonight's work.
+
+---
+
+## The Questions That Must Be Answered By May 7
+
+1. Can a C++ program load llama.cpp on Jetson without ollama? **Compile once, run.**
+2. Can we init CUDA without a display? **EGL context or nvidia-persistenced equivalent.**
+3. Does CMA-aware allocation improve performance measurably? **Before/after benchmark.**
+4. Can we beat 16 t/s (CPU baseline)? **If yes, the wedge is proven. If no, find the next bottleneck.**
+
+---
+
+*This document is the roadmap. It replaces the previous narrative version. All milestones are outcomes with clear pass/fail criteria. No hand-waving.*
