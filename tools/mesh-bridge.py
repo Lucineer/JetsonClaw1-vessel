@@ -209,6 +209,184 @@ def trust_decay_all():
     conn.close()
     return decayed
 
+
+# =============================================================
+#  Deadman Switch Protocol (fleet-innovations-2026-05-01 #3)
+# =============================================================
+
+DEADMAN_DB = os.path.expanduser("~/.openclaw/workspace/memory/deadman.db")
+
+def _deadman_db():
+    """Deadman switch state store."""
+    os.makedirs(os.path.dirname(DEADMAN_DB), exist_ok=True)
+    conn = sqlite3.connect(DEADMAN_DB)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS heartbeat (
+            agent TEXT PRIMARY KEY,
+            last_seen TEXT,
+            grace_until TEXT,
+            stage TEXT DEFAULT 'active',
+            successor TEXT
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS elections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            triggered_by TEXT,
+            stage TEXT,
+            outcome TEXT
+        )
+    """)
+    return conn
+
+def deadman_pulse(agent, timeout_minutes=5):
+    """Record a heartbeat pulse for an agent.
+    
+    Args:
+        agent: Agent identifier (e.g., 'oracle1', 'forgemaster')
+        timeout_minutes: Grace period before escalation
+    
+    Returns:
+        dict with current deadman stage and status
+    """
+    conn = _deadman_db()
+    now = datetime.now()
+    grace = now + timedelta(minutes=timeout_minutes)
+    
+    row = conn.execute("SELECT stage FROM heartbeat WHERE agent=?", (agent,)).fetchone()
+    
+    if row:
+        old_stage = row[0]
+        is_back = old_stage in ("degraded", "orphaned", "handoff")
+        conn.execute(
+            "UPDATE heartbeat SET last_seen=?, grace_until=?, stage='active' WHERE agent=?",
+            (now.isoformat(), grace.isoformat(), agent)
+        )
+        stage = "active"
+        if is_back:
+            conn.execute(
+                "INSERT INTO elections (timestamp, triggered_by, stage, outcome) VALUES (?, ?, ?, ?)",
+                (now.isoformat(), agent, "recovery", f"returned from {old_stage}")
+            )
+    else:
+        conn.execute(
+            "INSERT INTO heartbeat (agent, last_seen, grace_until, stage) VALUES (?, ?, ?, 'active')",
+            (agent, now.isoformat(), grace.isoformat())
+        )
+        stage = "active"
+    
+    conn.commit()
+    conn.close()
+    return {"agent": agent, "stage": stage}
+
+def deadman_check(agent):
+    """Check deadman stage for an agent. Escalates if grace period expired.
+    
+    Stages:
+      - active:       Agent is present, heartbeats arriving
+      - degraded:     Oracle1 silent < 5 min — cached ops, no routing
+      - orphaned:     Silent 5-30 min — election triggers
+      - handoff:      Silent > 30 min — successor takes over
+    """
+    conn = _deadman_db()
+    row = conn.execute("SELECT agent, last_seen, grace_until, stage, successor FROM heartbeat WHERE agent=?", (agent,)).fetchone()
+    conn.close()
+    
+    if not row:
+        return {"agent": agent, "stage": "unknown", "since": None}
+    
+    agent, last_seen, grace_until, current_stage, successor = row
+    now = datetime.now()
+    
+    try:
+        last = datetime.fromisoformat(last_seen)
+        grace = datetime.fromisoformat(grace_until)
+    except ValueError:
+        return {"agent": agent, "stage": current_stage}
+    
+    elapsed_mins = (now - last).total_seconds() / 60
+    
+    # Determine stage
+    if current_stage == "active" and now > grace:
+        new_stage = "degraded"
+    elif current_stage == "degraded" and elapsed_mins > 5:
+        new_stage = "orphaned"
+    elif current_stage == "orphaned" and elapsed_mins > 30:
+        new_stage = "handoff"
+    else:
+        new_stage = current_stage
+    
+    # Auto-upgrade if needed
+    if new_stage != current_stage:
+        conn2 = _deadman_db()
+        conn2.execute("UPDATE heartbeat SET stage=? WHERE agent=?", (new_stage, agent))
+        conn2.execute(
+            "INSERT INTO elections (timestamp, triggered_by, stage, outcome) VALUES (?, ?, ?, ?)",
+            (now.isoformat(), "deadman_check", "escalation", f"{current_stage} -> {new_stage}")
+        )
+        conn2.commit()
+        conn2.close()
+        current_stage = new_stage
+    
+    # Determine successor if in handoff
+    successor_agent = None
+    if current_stage == "handoff":
+        # Pick highest-trust agent as successor
+        fleet = trust_summary()
+        candidates = [t["agent"] for t in fleet if t["agent"] != agent and t["score"] >= 0.4]
+        if candidates:
+            successor_agent = candidates[0]
+    
+    return {
+        "agent": agent,
+        "stage": current_stage,
+        "elapsed_mins": round(elapsed_mins, 1),
+        "last_seen": last_seen,
+        "successor": successor_agent
+    }
+
+def deadman_election():
+    """Run an election to pick an interim keeper.
+    
+    Any agent in orphaned or handoff stage triggers an election.
+    Winner is the agent with the highest trust score.
+    """
+    conn = _deadman_db()
+    rows = conn.execute(
+        "SELECT agent, stage FROM heartbeat WHERE stage IN ('orphaned', 'handoff')"
+    ).fetchall()
+    conn.close()
+    
+    if not rows:
+        return {"election": False, "reason": "no agents need election"}
+    
+    fleet = trust_summary()
+    # Filter to only agents not in deadman state
+    deadman_agents = {r[0] for r in rows}
+    candidates = [t for t in fleet if t["agent"] not in deadman_agents]
+    
+    if not candidates:
+        return {"election": False, "reason": "no candidates available"}
+    
+    winner = max(candidates, key=lambda x: x["score"])
+    
+    now = datetime.now()
+    conn2 = _deadman_db()
+    conn2.execute(
+        "INSERT INTO elections (timestamp, triggered_by, stage, outcome) VALUES (?, ?, ?, ?)",
+        (now.isoformat(), "auto", "election", f"winner={winner['agent']}")
+    )
+    conn2.commit()
+    conn2.close()
+    
+    return {
+        "election": True,
+        "winner": winner["agent"],
+        "score": winner["score"],
+        "candidates": len(candidates)
+    }
+
 def build_health_report():
     """Build a concise health report to send to the fleet."""
     lines = []
@@ -274,15 +452,26 @@ def mesh_tick():
     results["oracle1_alive"] = "stdout" in shell_result and "alive" in str(shell_result)
     if results["oracle1_alive"]:
         trust_update("oracle1", "positive", 0.8)
+        deadman_pulse("oracle1")  # Reset deadman timer
         messages.append(f"Oracle1: connected")
     else:
         trust_update("oracle1", "negative", 0.6)
-        messages.append(f"Oracle1: unreachable ({shell_result.get('error', 'unknown')})")
+        status = deadman_check("oracle1")
+        messages.append(f"Oracle1: unreachable ({shell_result.get('error', 'unknown')}) ")
+        messages.append(f"  Deadman: {status['stage']} ({status.get('elapsed_mins', '?')}m elapsed)")
+        
+        # Trigger election if orphaned or worse
+        if status['stage'] in ('orphaned', 'handoff'):
+            election = deadman_election()
+            if election['election']:
+                messages.append(f"  Election: {election['winner']} wins ({election['score']:.2f}, {election['candidates']} candidates)")
     
     # 2. Check Forgemaster: availability + existing bottles
     fm_available = os.path.exists("/tmp/forgemaster")
     if fm_available:
         trust_update("forgemaster", "positive", 0.7)
+        deadman_pulse("forgemaster", timeout_minutes=30)
+        results['forge_live'] = True
         bottles = check_fm_bottles()
         results["bottles"] = bottles
         if bottles:
@@ -311,7 +500,19 @@ def mesh_tick():
             trust_lines.append(f"  {icon} {t['agent']}: {t['score']:.2f} ({t['observations']} obs)")
         messages.append("Fleet trust:" + "\n" + "\n".join(trust_lines))
     
-    # 5. Send status bottle if we haven't in the last hour
+    # 5. Deadman status for tracked agents
+    for agent_name in ["oracle1", "forgemaster", "kimi", "fm"]:
+        d = deadman_check(agent_name)
+        if d["stage"] != "unknown":
+            stage_icon = {"active": "+", "degraded": "~", "orphaned": "-", "handoff": "!"}
+            icon = stage_icon.get(d["stage"], "?")
+            elapsed = d.get("elapsed_mins", 0)
+            msg = f"  {icon} {agent_name}: {d['stage']}"
+            if elapsed > 0:
+                msg += f" ({elapsed}m since pulse)"
+            messages.append(msg)
+    
+    # 6. Send status bottle if we haven't in the last hour
     status_path = "/tmp/.last-mesh-tick"
     send_status = False
     if os.path.exists(status_path):
