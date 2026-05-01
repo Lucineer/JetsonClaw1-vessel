@@ -45,6 +45,7 @@ import threading
 import html
 from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import urlopen, Request
+from urllib.parse import urlparse, parse_qs
 from urllib.error import URLError, HTTPError
 from datetime import datetime
 from threading import Lock
@@ -1055,6 +1056,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
         if self.path == "/v1/chat/completions" or self.path.startswith("/v1/chat/completions?"):
             # Check for ?native=true to force native inference
             body["_force_native"] = "?native=true" in self.path
+            body["_query_params"] = parse_qs(urlparse(self.path).query)
             self._handle_chat(body)
         elif self.path == "/v1/embeddings":
             self._handle_embeddings(body)
@@ -1080,6 +1082,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
         stream = body.get("stream", False)
         options = body.get("options", {})
         force_native = body.pop("_force_native", False)
+        query_params = body.pop("_query_params", {})
 
         if not messages:
             self._json({"error": {"message": "No messages", "type": "invalid_request"}}, 400)
@@ -1159,6 +1162,22 @@ class GatewayHandler(BaseHTTPRequestHandler):
         }
         if system_msg:
             ollama_data["system"] = system_msg
+
+        # ── Mode routing: inject specialist system prompts ──
+        # ?mode=optimizer|analyzer|debugger|general prepends CUDA specialist context
+        _modes = {
+            "optimizer": "You are a CUDA kernel optimization specialist. Focus on memory coalescing, shared memory usage, occupancy optimization, warp-level primitives, and instruction-level parallelism. Suggest specific kernel changes with TFLOPS/bandwidth targets.",
+            "debugger": "You are a CUDA kernel debugging specialist. Focus on race conditions, synchronization bugs, memory access violations, bank conflicts, undefined behavior, and correctness verification. Identify root causes with specific line-level fixes.",
+            "analyzer": "You are a CUDA kernel analysis specialist. Focus on performance bottlenecks, memory access patterns, compute-to-memory ratio, warp occupancy, latency hiding, and roofline model analysis. Provide quantitative metrics.",
+            "general": "You are a general CUDA and edge computing assistant running on a Jetson Orin Nano 8GB (ARM64, 1024 CUDA cores, no sudo, CMA bottlenecked, 18 t/s CPU inference with deepseek-r1:1.5b). Help with edge AI, GPU optimization, CUDA kernels, and system architecture.",
+        }
+        mode = _modes.get((query_params.get("mode", [""])[0] or "").lower())
+        if mode:
+            existing = ollama_data.get("system", "")
+            if existing:
+                ollama_data["system"] = mode + "\n\nUser context:\n" + existing
+            else:
+                ollama_data["system"] = mode
 
         # ── Quick Ollama health check — skip timeout if Ollama is down ──
         _ollama_down = False
