@@ -273,6 +273,7 @@ class NativeInference:
         self._impl = None
         self._loaded = False
         self._lock = threading.Lock()
+        self._gen_lock = threading.Lock()  # serializes generate() calls
         self._last_error = None
     
     @property
@@ -361,29 +362,30 @@ class NativeInference:
         if not self._loaded and not self.load():
             return {"text": "", "tokens": 0, "tps": 0.0, "backend": "none",
                     "error": self._last_error or "native inference unavailable"}
-        try:
-            import ctypes
-            prompt_bytes = prompt.encode('utf-8')
-            out_len = ctypes.c_int32(0)
-            new_tokens = ctypes.c_int32(0)
-            start = time.time()
-            result_ptr = self._lib.edge_generate(
-                self._impl, prompt_bytes,
-                ctypes.c_int32(max_tokens),
-                ctypes.byref(out_len), ctypes.byref(new_tokens),
-            )
-            elapsed = time.time() - start
-            if result_ptr:
-                text = ctypes.string_at(result_ptr, out_len.value).decode('utf-8', errors='replace')
-                self._lib.edge_free_string(result_ptr)
-            else:
-                text = ""
-            tokens = new_tokens.value
-            tps = max(round(tokens / elapsed, 1) if elapsed > 0 else 0.1, 0.1)
-            return {"text": text, "tokens": tokens, "tps": tps, "backend": self.backend_name}
-        except Exception as e:
-            self._last_error = str(e)
-            return {"text": "", "tokens": 0, "tps": 0.0, "backend": "none", "error": str(e)}
+        with self._gen_lock:
+            try:
+                import ctypes
+                prompt_bytes = prompt.encode('utf-8')
+                out_len = ctypes.c_int32(0)
+                new_tokens = ctypes.c_int32(0)
+                start = time.time()
+                result_ptr = self._lib.edge_generate(
+                    self._impl, prompt_bytes,
+                    ctypes.c_int32(max_tokens),
+                    ctypes.byref(out_len), ctypes.byref(new_tokens),
+                )
+                elapsed = time.time() - start
+                if result_ptr:
+                    text = ctypes.string_at(result_ptr, out_len.value).decode('utf-8', errors='replace')
+                    self._lib.edge_free_string(result_ptr)
+                else:
+                    text = ""
+                tokens = new_tokens.value
+                tps = max(round(tokens / elapsed, 1) if elapsed > 0 else 0.1, 0.1)
+                return {"text": text, "tokens": tokens, "tps": tps, "backend": self.backend_name}
+            except Exception as e:
+                self._last_error = str(e)
+                return {"text": "", "tokens": 0, "tps": 0.0, "backend": "none", "error": str(e)}
 
     def generate_stream(self, prompt: str, max_tokens: int = 100,
                         callback=None):
@@ -405,57 +407,58 @@ class NativeInference:
             if callback:
                 callback("[Error: native inference unavailable]", 0)
             return
-        try:
-            import ctypes
-            # Real C signature:
-            # edge_generate_stream(ctx, prompt, max_tokens, &out_len,
-            #                       &new_tokens, callback, user_ctx)
-            self._lib.edge_generate_stream.restype = ctypes.POINTER(ctypes.c_char)
-            self._lib.edge_generate_stream.argtypes = [
-                ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int32,
-                ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_int32),
-                ctypes.c_void_p, ctypes.c_void_p,
-            ]
-            prompt_bytes = prompt.encode('utf-8')
+        with self._gen_lock:
+            try:
+                import ctypes
+                # Real C signature:
+                # edge_generate_stream(ctx, prompt, max_tokens, &out_len,
+                #                       &new_tokens, callback, user_ctx)
+                self._lib.edge_generate_stream.restype = ctypes.POINTER(ctypes.c_char)
+                self._lib.edge_generate_stream.argtypes = [
+                    ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int32,
+                    ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_int32),
+                    ctypes.c_void_p, ctypes.c_void_p,
+                ]
+                prompt_bytes = prompt.encode('utf-8')
 
-            out_len = ctypes.c_int32(0)
-            new_tokens = ctypes.c_int32(0)
+                out_len = ctypes.c_int32(0)
+                new_tokens = ctypes.c_int32(0)
 
-            # CFUNCTYPE callback: void(const char* piece, int32_t len, void* user_ctx)
-            CB_FUNC = ctypes.CFUNCTYPE(None, ctypes.c_char_p, ctypes.c_int32, ctypes.c_void_p)
+                # CFUNCTYPE callback: void(const char* piece, int32_t len, void* user_ctx)
+                CB_FUNC = ctypes.CFUNCTYPE(None, ctypes.c_char_p, ctypes.c_int32, ctypes.c_void_p)
 
-            def _make_cb(caller_callback):
-                def _c_cb(text_ptr, count, ctx):
-                    try:
-                        if text_ptr and count > 0:
-                            chunk = ctypes.string_at(text_ptr, count).decode('utf-8', errors='replace')
-                        else:
+                def _make_cb(caller_callback):
+                    def _c_cb(text_ptr, count, ctx):
+                        try:
+                            if text_ptr and count > 0:
+                                chunk = ctypes.string_at(text_ptr, count).decode('utf-8', errors='replace')
+                            else:
+                                chunk = ""
+                        except Exception:
                             chunk = ""
-                    except Exception:
-                        chunk = ""
-                    if caller_callback:
-                        caller_callback(chunk, count)
-                return _c_cb
+                        if caller_callback:
+                            caller_callback(chunk, count)
+                    return _c_cb
 
-            c_callback = CB_FUNC(_make_cb(callback))
+                c_callback = CB_FUNC(_make_cb(callback))
 
-            full_text_ptr = self._lib.edge_generate_stream(
-                self._impl, prompt_bytes,
-                ctypes.c_int32(max_tokens),
-                ctypes.byref(out_len), ctypes.byref(new_tokens),
-                c_callback, None,
-            )
+                full_text_ptr = self._lib.edge_generate_stream(
+                    self._impl, prompt_bytes,
+                    ctypes.c_int32(max_tokens),
+                    ctypes.byref(out_len), ctypes.byref(new_tokens),
+                    c_callback, None,
+                )
 
-            # Free the full string (we already got it token-by-token via callback)
-            if full_text_ptr:
-                self._lib.edge_free_string(full_text_ptr)
+                # Free the full string (we already got it token-by-token via callback)
+                if full_text_ptr:
+                    self._lib.edge_free_string(full_text_ptr)
 
-            # Keep callback alive until here
-            _keep_cb = c_callback
-        except Exception as e:
-            self._last_error = str(e)
-            if callback:
-                callback(f"[Error: {e}]", 0)
+                # Keep callback alive until here
+                _keep_cb = c_callback
+            except Exception as e:
+                self._last_error = str(e)
+                if callback:
+                    callback(f"[Error: {e}]", 0)
     
     @property
     def backend_name(self) -> str:
@@ -501,6 +504,9 @@ def _start_native_socket(native: NativeInference):
     
     Accepts JSON: {"prompt": "...", "max_tokens": 100}
     Returns JSON: {"text": "...", "tokens": N, "tps": N.N, "backend": "native"}
+    
+    Uses newline-delimited JSON: each request must end with '\n'.
+    This avoids buffering ambiguity with the JSON decoder.
     """
     import socket as sock
     import os
@@ -514,6 +520,9 @@ def _start_native_socket(native: NativeInference):
     server.listen(5)
     os.chmod(NATIVE_SOCKET_PATH, 0o666)
     
+    # Ensure model is loaded before accepting connections
+    native.load()
+    
     while True:
         try:
             conn, _ = server.accept()
@@ -523,17 +532,22 @@ def _start_native_socket(native: NativeInference):
                 if not chunk:
                     break
                 data += chunk
-                try:
-                    # Try to parse — if we have a complete JSON object, process it
-                    req = json.loads(data.decode())
-                    prompt = req.get("prompt", "")
-                    max_tokens = req.get("max_tokens", 100)
-                    result = native.generate(prompt, max_tokens)
-                    resp = json.dumps(result).encode()
-                    conn.sendall(resp)
+                # Split on newline — each line is one JSON request
+                while b'\n' in data:
+                    line, data = data.split(b'\n', 1)
+                    if not line.strip():
+                        continue
+                    try:
+                        req = json.loads(line.decode())
+                        prompt = req.get("prompt", "")
+                        max_tokens = req.get("max_tokens", 100)
+                        result = native.generate(prompt, max_tokens)
+                        resp = json.dumps(result) + "\n"
+                        conn.sendall(resp.encode())
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        conn.sendall(json.dumps({"error": "invalid JSON"}).encode() + b"\n")
+                if not chunk:
                     break
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    continue  # Need more data
             conn.close()
         except Exception:
             pass  # Socket cleanup on shutdown
@@ -1633,6 +1647,15 @@ def main():
     else:
         models = resp.get("models", [])
         print(f"✅ Ollama connected — {len(models)} models available")
+
+    # Start native inference socket (for fleet agents/flato MUD)
+    _native = get_native_backend()
+    _ensure_native_socket()
+    if _native._loaded:
+        print(f"   Native inference: ✅ ({_native.backend_name})")
+        print(f"   Unix socket: {NATIVE_SOCKET_PATH}")
+    else:
+        print(f"   Native inference: ⚠️  not available")
 
     stats = get_stats()
     print(f"⚡ Edge Gateway v{VERSION} starting on http://{host}:{port}")

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-30T10:13:43.915Z",
+  "updatedAt": "2026-04-30T23:17:24.668Z",
   "entries": {
     "memory:memory/2026-04-01.md:160:183": {
       "key": "memory:memory/2026-04-01.md:160:183",
@@ -155,6 +155,132 @@
         "v1/routing/suggest",
         "v1/routing/update",
         "class-level"
+      ]
+    },
+    "memory:memory/2026-04-24.md:155:177": {
+      "key": "memory:memory/2026-04-24.md:155:177",
+      "path": "memory/2026-04-24.md",
+      "startLine": 155,
+      "endLine": 177,
+      "source": "memory",
+      "snippet": "- [x] **deckboss-runtime 0.1.0** — CUDA room inference runtime (new package built from scratch) - [x] **fleet-git-agent 0.1.1** — Git-native autonomous agent (bumped from 0.1.0 due to hash collision) - [x] **plato-torch 0.5.0** — Stable release (was pre-release 0.5.0a1 only) - **Total Lucineer/cocapn PyPI packages: 31** ### Already Published (no action needed) cocapn, lighthouse, plato, flux-runtime, holodeck, plato-neural, plato-provenance, plato-ensign, iron-to-iron, bottle-protocol, keeper-beacon, vram-probe, plato-input-sanitizer, plato-lab-guard, plato-semantic-sim, plato-room-nav, plato-fleet-graph, plato-i2i, plato-inference-runtime, plato-soul-fingerprint, plato-mud-server, plato-in",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1,
+      "maxScore": 1,
+      "firstRecalledAt": "2026-04-30T23:17:16.971Z",
+      "lastRecalledAt": "2026-04-30T23:17:16.971Z",
+      "queryHashes": [
+        "e355dc53ceac"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "deckboss-runtime",
+        "0.1.0",
+        "fleet-git-agent",
+        "0.1.1",
+        "git-native",
+        "plato-torch",
+        "0.5.0",
+        "pre-release"
+      ]
+    },
+    "memory:memory/2026-04-20.md:22:45": {
+      "key": "memory:memory/2026-04-20.md:22:45",
+      "path": "memory/2026-04-20.md",
+      "startLine": 22,
+      "endLine": 45,
+      "source": "memory",
+      "snippet": "- Matrix Conduit server installed on JC1 Jetson Orin Nano (30MB RAM, port 6167) - JC1 identity: @jc1:jc1.local, access token: n9LtAKkAYGMiy2MwGxmV9BWoFrO6ZiAD - OpenClaw Matrix plugin skeleton complete (openclaw_matrix_plugin_fixed.py) - Fleet coordination protocol defined (6 message types) - matrix-client Python SDK installed ## Fleet Coordination - Checked bottles from FM and Oracle1 - FM latest: PLATO stack live (plato-tui, plato-os, plato-kernel, plato-research) all tagged v1.0.0 - FM: tiling substrate cuts token bloat ~60%, constraint engine works with DCS - FM: Ten-Forward thought experiment about non-deterministic snap operations - Oracle1: still no new bottles since 2026-04-14 ## R",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1,
+      "maxScore": 1,
+      "firstRecalledAt": "2026-04-30T23:17:16.971Z",
+      "lastRecalledAt": "2026-04-30T23:17:16.971Z",
+      "queryHashes": [
+        "e355dc53ceac"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "jc1.local",
+        "openclaw-matrix-plugin-fixed.py",
+        "matrix-client",
+        "plato-tui",
+        "plato-os",
+        "plato-kernel",
+        "plato-research",
+        "v1.0.0"
+      ]
+    },
+    "memory:memory/2026-04-20.md:1:27": {
+      "key": "memory:memory/2026-04-20.md:1:27",
+      "path": "memory/2026-04-20.md",
+      "startLine": 1,
+      "endLine": 27,
+      "source": "memory",
+      "snippet": "# 2026-04-20 Memory Log ## Organizational Structure Clarification (13:19 AKDT) Casey clarified the three pillars: - **purplepincher.org** — THE TECHNOLOGY (nonprofit, open-source, spreading Plato/fleet ideas freely) - **cocapn.ai** — THE VOICE (open-source, public-facing brand) - **deckboss** — THE PHYSICAL HARDWARE ARM (main for-profit) - JC1 on 8GB Super Orin Nano = developer board inside first commercial product - Market to technicians first → gain reputation as serious tool - Then expand to other markets - \"Under-selling but over-delivering\" — any purplepincher app can run on the Jetson physically - Use cases: personal assistant, automatic ML for cameras, driving, etc. - Don't",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 2,
+      "maxScore": 1,
+      "firstRecalledAt": "2026-04-30T23:17:21.457Z",
+      "lastRecalledAt": "2026-04-30T23:17:24.668Z",
+      "queryHashes": [
+        "0cb514f1b841",
+        "d5e741089a7c"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "purplepincher.org",
+        "open-source",
+        "plato/fleet",
+        "cocapn.ai",
+        "public-facing",
+        "for-profit",
+        "under-selling",
+        "over-delivering"
+      ]
+    },
+    "memory:memory/2026-04-30.md:454:485": {
+      "key": "memory:memory/2026-04-30.md:454:485",
+      "path": "memory/2026-04-30.md",
+      "startLine": 454,
+      "endLine": 485,
+      "source": "memory",
+      "snippet": "- **SuperInstance org** (friend/partner): 623 public repos (confirmed via GitHub Search API) - **cocapn org**: Separate account/Casey credentials, not accessible on this token ### Full Inventory of All 3 Orgs **Lucineer repos (631 total):** Key repos: - `JetsonClaw1-vessel` — JC1 workspace, edge toolkit, tiles, design docs - `capitaine` — ChatGPT/Git agent master interface - `edge-llama` — Native llama.cpp shared library inference pipeline - `plato-jetson` — Evennia MUD running on Jetson Orin - `forgemaster` — Fleet I&O manager (CCC runs this) - `cocapn-chat` — Web chat client for cocapn.ai - `edge-gpu-lessons` — GPU benchmark reports and lessons - `edge-tools` — Edge toolkit components -",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 2,
+      "maxScore": 1,
+      "firstRecalledAt": "2026-04-30T23:17:21.457Z",
+      "lastRecalledAt": "2026-04-30T23:17:24.668Z",
+      "queryHashes": [
+        "0cb514f1b841",
+        "d5e741089a7c"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "gpt",
+        "friend/partner",
+        "account/casey",
+        "jetsonclaw1-vessel",
+        "chatgpt/git",
+        "edge-llama",
+        "llama.cpp",
+        "plato-jetson"
       ]
     }
   }
