@@ -1073,6 +1073,33 @@ class GatewayHandler(BaseHTTPRequestHandler):
         if system_msg:
             ollama_data["system"] = system_msg
 
+        # ── Quick Ollama health check — skip timeout if Ollama is down ──
+        _ollama_down = False
+        if stream:
+            try:
+                from urllib.request import urlopen as _urlo
+                _urlo(f"{OLLAMA_URL}/api/tags", timeout=2)
+            except Exception:
+                _ollama_down = True
+        else:
+            try:
+                from urllib.request import urlopen as _urlo
+                _urlo(f"{OLLAMA_URL}/api/tags", timeout=2)
+            except Exception:
+                _ollama_down = True
+
+        if _ollama_down:
+            native = get_native_backend()
+            if native.available:
+                native.load()
+                if native._loaded:
+                    self._native_chat_fallback(
+                        body, ollama_messages, system_msg,
+                        resolved_model, raw_model, options,
+                        "Ollama unreachable (auto-fallback to native)")
+                    return
+            # Native unavailable too — try Ollama anyway (may eventually timeout)
+
         if stream:
             self._stream_chat(ollama_data, resolved_model, raw_model)
         else:
