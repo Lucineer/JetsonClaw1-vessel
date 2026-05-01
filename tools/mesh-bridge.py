@@ -13,7 +13,8 @@ import json
 import subprocess
 import urllib.request
 import urllib.error
-from datetime import datetime
+import sqlite3
+from datetime import datetime, timedelta
 
 # =============================================================
 #  Remote Plato Shell (Oracle1)
@@ -101,6 +102,113 @@ def send_fm_bottle(content, title=None):
 #  System Health → Mesh Update
 # =============================================================
 
+# =============================================================
+#  Fleet Trust Scoring (flux-trust integration)
+# =============================================================
+
+TRUST_DB = os.path.expanduser("~/.openclaw/workspace/memory/fleet-trust.db")
+
+def _trust_db():
+    """Get or create the trust SQLite database."""
+    os.makedirs(os.path.dirname(TRUST_DB), exist_ok=True)
+    conn = sqlite3.connect(TRUST_DB)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS trust (
+            agent TEXT PRIMARY KEY,
+            score REAL DEFAULT 0.5,
+            observations INTEGER DEFAULT 0,
+            last_seen TEXT,
+            domain TEXT DEFAULT 'general'
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS interactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent TEXT,
+            interaction_type TEXT,
+            outcome TEXT,
+            timestamp TEXT,
+            confidence REAL DEFAULT 0.5
+        )
+    """)
+    return conn
+
+def trust_update(agent, outcome, confidence=0.5):
+    """
+    Update trust score using Bayesian flux-trust model.
+    
+    Posterior = (Prior * (1 - decay) + Outcome * Confidence) / (1 - decay + Confidence)
+    
+    Args:
+        agent: Agent identifier (e.g., 'oracle1', 'forgemaster')
+        outcome: 'positive', 'negative', or 'neutral'
+        confidence: How confident we are in this observation (0.0-1.0)
+    """
+    conn = _trust_db()
+    row = conn.execute("SELECT score, observations FROM trust WHERE agent=?", (agent,)).fetchone()
+    
+    if row:
+        prior, obs = row
+        decay = 0.04  # flux-trust default per-tick decay
+        prior = prior * (1 - decay)  # decay over time
+    else:
+        prior = 0.5  # neutral start
+        obs = 0
+    
+    # Map outcome to numeric
+    outcome_val = {"positive": 1.0, "negative": 0.0, "neutral": 0.5}.get(outcome, 0.5)
+    
+    # Bayesian update
+    new_obs = obs + 1
+    if confidence == 0:
+        posterior = prior
+    else:
+        posterior = (prior * (1 - confidence) + outcome_val * confidence)
+    
+    # Clamp
+    posterior = max(0.0, min(1.0, posterior))
+    
+    conn.execute(
+        "INSERT OR REPLACE INTO trust (agent, score, observations, last_seen, domain) VALUES (?, ?, ?, ?, ?)",
+        (agent, round(posterior, 4), new_obs, datetime.now().isoformat(), 'general')
+    )
+    conn.execute(
+        "INSERT INTO interactions (agent, interaction_type, outcome, timestamp, confidence) VALUES (?, ?, ?, ?, ?)",
+        (agent, 'observation', outcome, datetime.now().isoformat(), confidence)
+    )
+    conn.commit()
+    conn.close()
+    return posterior
+
+def trust_score(agent):
+    """Get current trust score for an agent."""
+    conn = _trust_db()
+    row = conn.execute("SELECT score, observations FROM trust WHERE agent=?", (agent,)).fetchone()
+    conn.close()
+    if row:
+        return {"score": row[0], "observations": row[1]}
+    return {"score": 0.5, "observations": 0}
+
+def trust_summary():
+    """Get trust summary for all tracked agents."""
+    conn = _trust_db()
+    rows = conn.execute("SELECT agent, score, observations, last_seen, domain FROM trust ORDER BY score DESC").fetchall()
+    conn.close()
+    return [
+        {"agent": r[0], "score": r[1], "observations": r[2], 
+         "last_seen": r[3], "domain": r[4]}
+        for r in rows
+    ]
+
+def trust_decay_all():
+    """Apply daily decay to all trust scores (flux-stigmergy pattern)."""
+    conn = _trust_db()
+    conn.execute("UPDATE trust SET score = MAX(0.0, MIN(1.0, score * 0.96))")
+    conn.commit()
+    decayed = conn.execute("SELECT COUNT(*) FROM trust").fetchone()[0]
+    conn.close()
+    return decayed
+
 def build_health_report():
     """Build a concise health report to send to the fleet."""
     lines = []
@@ -156,31 +264,54 @@ def mesh_tick():
     results = {"bottles": [], "oracle1_inbox": [], "oracle1_alive": False, "message": ""}
     messages = []
     
-    # 1. Check Forgemaster bottles
-    bottles = check_fm_bottles()
-    results["bottles"] = bottles
-    if bottles:
-        messages.append(f"FM: {len(bottles)} bottles pending")
-        for b in bottles[:3]:
-            with open(b) as f:
-                content = f.read()
-            messages.append(f"  {os.path.basename(b)[:40]}: {content[:100]}...")
+    # 0. Apply daily decay to trust scores
+    decayed = trust_decay_all()
+    if decayed > 0:
+        messages.append(f"Trust: {decayed} agents decayed")
     
-    # 2. Check Oracle1 inbox
+    # 1. Check Oracle1: ping & trust update
+    shell_result = oracle1_shell("echo alive")
+    results["oracle1_alive"] = "stdout" in shell_result and "alive" in str(shell_result)
+    if results["oracle1_alive"]:
+        trust_update("oracle1", "positive", 0.8)
+        messages.append(f"Oracle1: connected")
+    else:
+        trust_update("oracle1", "negative", 0.6)
+        messages.append(f"Oracle1: unreachable ({shell_result.get('error', 'unknown')})")
+    
+    # 2. Check Forgemaster: availability + existing bottles
+    fm_available = os.path.exists("/tmp/forgemaster")
+    if fm_available:
+        trust_update("forgemaster", "positive", 0.7)
+        bottles = check_fm_bottles()
+        results["bottles"] = bottles
+        if bottles:
+            messages.append(f"FM: {len(bottles)} bottles pending")
+            for b in bottles[:3]:
+                with open(b) as f:
+                    content = f.read()
+                messages.append(f"  {os.path.basename(b)[:40]}: {content[:80]}...")
+        else:
+            messages.append("FM: synced, no new bottles")
+    else:
+        messages.append("FM: not mounted")
+    
+    # 3. Check Oracle1 inbox
     inbox = check_oracle1_inbox()
     results["oracle1_inbox"] = inbox
     if inbox:
-        messages.append(f"Oracle1: {len(inbox)} messages pending")
+        messages.append(f"Oracle1 inbox: {len(inbox)} messages pending")
     
-    # 3. Ping Oracle1
-    shell_result = oracle1_shell("echo alive")
-    results["oracle1_alive"] = "stdout" in shell_result and "alive" in str(shell_result)
-    if not results["oracle1_alive"]:
-        messages.append(f"Oracle1: unreachable ({shell_result.get('error', 'unknown')})")
-    else:
-        messages.append("Oracle1: connected")
+    # 4. Trust summary across fleet
+    fleet_trust = trust_summary()
+    if fleet_trust:
+        trust_lines = []
+        for t in fleet_trust:
+            icon = "+" if t["score"] >= 0.7 else "~" if t["score"] >= 0.4 else "-"
+            trust_lines.append(f"  {icon} {t['agent']}: {t['score']:.2f} ({t['observations']} obs)")
+        messages.append("Fleet trust:" + "\n" + "\n".join(trust_lines))
     
-    # 4. Send status bottle if we haven't in a while
+    # 5. Send status bottle if we haven't in the last hour
     status_path = "/tmp/.last-mesh-tick"
     send_status = False
     if os.path.exists(status_path):
@@ -193,9 +324,9 @@ def mesh_tick():
     
     if send_status:
         report = build_health_report()
-        report += f"\n\n[auto-mesh-tick: {datetime.now().isoformat()}]"
+        report += f"\n[auto-mesh-tick: {datetime.now().isoformat()}]"
         send_fm_bottle(report, f"BOTTLE-FROM-JC1-AUTO-{datetime.now().strftime('%Y%m%d-%H%M')}")
-        messages.append("Sent status bottle to Forgemaster")
+        messages.append("Status bottle sent to Forgemaster")
         with open(status_path, "w") as f:
             f.write(datetime.now().strftime("%Y-%m-%d-%H"))
     
