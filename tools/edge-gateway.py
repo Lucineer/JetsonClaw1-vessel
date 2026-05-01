@@ -20,6 +20,7 @@ Single server that exposes:
   POST /v1/conversations/:id/messages — Add message
   GET  /v1/usage                — Usage stats
   DELETE /v1/conversations/:id  — Delete conversation
+  POST  /v1/stream/process       — Stream processing pipeline (flato → native)
 
 Compatible with OpenAI SDK, LangChain, and any OpenAI-compatible client.
 All models run CPU-only on-device via Ollama (no cloud APIs).
@@ -584,6 +585,93 @@ def _ensure_native_socket():
                 t.start()
 
 
+# ── Stream Processing Pipeline (fleet-innovations #2) ───────────
+# Accepts text from flato MUD, processes through native inference,
+# returns streaming response for real-time agent-to-agent data flow.
+# 
+# Flato sends: POST /v1/stream/process with {"text": "...", "source": "flato"}
+# Gateway: adds system context, runs inference, streams back
+
+STREAM_PIPELINE_SYSTEM_PROMPT = (
+    "You are a stream processing node in the JC1 fleet mesh. "
+    "Incoming text from flato MUD should be processed for intent, "
+    "summarized if long, and routed to the appropriate PLATO room "
+    "or fleet agent. Be concise, actionable, and maintain context."
+)
+
+def handle_stream_process(handler, body):
+    """Stream processing pipeline for flato MUD text (fleet-innovations #2).
+    
+    Args:
+        handler: GatewayHandler instance (already has send_response, wfile)
+        body: Pre-parsed JSON dict from do_POST
+    
+    Accepts: {"text": "...", "source": "...", "max_tokens": N, "stream": bool}
+    Returns: SSE stream or JSON (processed text through native inference)
+    """
+    import json
+    
+    text = body.get("text", "")
+    source = body.get("source", "unknown")
+    max_tokens = body.get("max_tokens", 128)
+    stream = body.get("stream", True)
+    
+    if not text:
+        handler.send_response(400)
+        handler.send_header('Content-Type', 'application/json')
+        handler.end_headers()
+        handler.wfile.write(json.dumps({"error": "text required"}).encode())
+        return
+    
+    # Build pipeline prompt
+    pipeline_prompt = (
+        f"[Stream from {source}] {text}\n\n"
+        f"{STREAM_PIPELINE_SYSTEM_PROMPT}"
+    )
+    
+    use_native = get_native_backend().available
+    native = get_native_backend()
+    
+    if stream:
+        handler.send_response(200)
+        handler.send_header('Content-Type', 'text/event-stream')
+        handler.send_header('Cache-Control', 'no-cache')
+        handler.end_headers()
+        
+        if use_native:
+            # Stream from native backend
+            def stream_callback(token: str, done: bool):
+                if done:
+                    handler.wfile.write(b"data: [DONE]\n\n")
+                else:
+                    escaped = token.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
+                    handler.wfile.write(f"data: {{\"token\":\"{escaped}\"}}\n\n".encode())
+                handler.wfile.flush()
+            
+            native.generate_stream(pipeline_prompt, max_tokens, stream_callback)
+        else:
+            # Fallback: generate once and stream as single response
+            result = native.generate(pipeline_prompt, max_tokens)
+            escaped = result.get("text", "").replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
+            handler.wfile.write(f"data: {{\"token\":\"{escaped}\"}}\n\n".encode())
+            handler.wfile.write(b"data: [DONE]\n\n")
+            handler.wfile.flush()
+    else:
+        # Non-streaming response
+        result = native.generate(pipeline_prompt, max_tokens)
+        handler.send_response(200)
+        handler.send_header('Content-Type', 'application/json')
+        handler.end_headers()
+        resp = {
+            "text": result.get("text", ""),
+            "tokens": result.get("tokens", 0),
+            "tps": result.get("tps", 0),
+            "backend": "native",
+            "source": source
+        }
+        handler.wfile.write(json.dumps(resp).encode())
+
+
 # ── System-level helpers ───────────────────────────────────────
 
 def get_effective_options():
@@ -1062,6 +1150,8 @@ class GatewayHandler(BaseHTTPRequestHandler):
             self._handle_embeddings(body)
         elif self.path == "/v1/rag/query":
             self._handle_rag(body)
+        elif self.path == "/v1/stream/process":
+            handle_stream_process(self, body)
         elif self.path.startswith("/v1/conversations"):
             self._handle_conversations_post(body)
         else:
