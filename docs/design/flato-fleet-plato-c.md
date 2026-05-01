@@ -1,81 +1,51 @@
-# flato — Fleet Plato MUD (C17)
+# flato — Fleet Plato MUD (C17) 🌐
 
-**A minimal multi-agent MUD for fleet compute.**
+**A minimal multi-agent MUD for fleet compute, deployed on port 4003.**
 
 flato is the networking layer. edge-llama is the compute layer. Together they form the foundation of a distributed mesh compute protocol.
 
-## Architecture
+## Architecture (Live)
 
 ```
-┌─────────────┐     Unix Socket     ┌──────────────┐
-│  flato MUD  │◄───────────────────►│  edge-llama  │
-│  (C17)      │   /tmp/edge-llama   │  inference   │
-│  telnet:    │   .sock             │  server      │
-│  0.0.0.0:   │                     │              │
-│  4000       │                     │              │
-└─────┬───────┘                     └──────────────┘
-      │
-      │ TCP/IP
-      ▼
-┌─────────────┐
-│ mesh peers  │
-│ (fleet)     │
-└─────────────┘
+┌─────────────┐   Unix Socket    ┌──────────────────┐
+│  flato MUD  │◄────────────────►│  edge-gateway    │
+│  (C17)      │  /tmp/edge-      │  NativeInference │
+│  telnet:    │  native.sock     │  daemon thread   │
+│  4003       │                  │     ↓            │
+│             │                  │  libedge-cuda.so │
+│             │                  │     ↓            │
+│             │                  │  libllama.so     │
+└─────────────┘                  └──────────────────┘
 ```
 
-## Protocol (Telnet-based)
+## Commands (Implemented)
 
-```
-> /think <prompt>        # Send prompt to edge-llama, stream response
-> /tile <name>           # Create knowledge tile from conversation
-> /graph                 # Show tile graph
-> /peer                  # List mesh peers
-> /bridge <peer>         # Bridge to another agent's MUD
-> /status                # System health
-```
+| Command | What it does |
+|---------|-------------|
+| `/think <prompt>` | Generate via native inference |
+| `/gpu` | nvidia-smi (temp, util, mem, power) |
+| `/cuda` | CUDA toolkit, device compute cap, CMA status |
+| `/status` | System health (clients, peers, uptime) |
+| `/peers` | List mesh peers |
+| `/help` | Help message |
+| `/quit` | Disconnect |
 
-## C17 Design
+## Protocol
 
-```c
-// flato.h — Core types
+Newline-delimited JSON over Unix socket. flato sends `{"prompt": "...", "max_tokens": N}`, gateway responds with `{"text": "...", "tokens": N, "tps": N.N, "backend": "..."}`.
 
-typedef struct {
-    int fd;                    // Client socket
-    char buf[8192];            // Read buffer
-    size_t len;                // Buffer length
-    enum { AWAITING_INPUT, GENERATING } state;
-    int32_t tokens[2048];      // Token history
-    int n_tokens;
-} Client;
+## Build & Deploy
 
-typedef struct {
-    int listen_fd;             // Telnet server socket
-    Client clients[16];        // Max concurrent clients
-    int n_clients;
-    // Mesh
-    struct sockaddr_in peers[32];
-    int n_peers;
-    // Edge-llama bridge
-    int llama_fd;              // Unix socket to edge-llama
-} Server;
-
-// Event loop: poll() on all fds
-// When client sends prompt: forward tokens to edge-llama via socket
-// When edge-llama responds: stream bytes to client
-```
-
-## Build
-
-```c
+```bash
+cd /home/lucineer/edge-llama
 cc -std=c17 -O2 -o flato flato.c -lpthread
+./flato 4003 /tmp/edge-native.sock
 ```
 
-No dependencies. Not even libevent. Pure poll()/send()/recv().
+## Future
 
-## Design Notes
-
-- flato owns the telnet connection pool and mesh routing
-- edge-llama owns compute — it's a stateless inference pipe
-- A single flato instance can drive multiple edge-llama processes (model sharding)
-- Mesh peers share the same flato protocol — discoverable via UDP broadcast
-- Knowledge tiles created during /think sessions persist to GGUF models via fine-tuning (future)
+- `@gpu` socket command for Evennia (read nvidia-smi from within MUD)
+- `/model <name>` to switch between loaded models
+- `/mode <optimizer|debugger|analyzer>` to match edge-gateway mode routing
+- Mesh peer discovery via UDP broadcast
+- Token budget tracking per session

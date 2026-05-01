@@ -1,49 +1,51 @@
 # edge-llama: Fleet-Native Inference Engine
 
-**Status:** Inception — building Phase 1
+**Status:** v0.6.0 — CPU inference at 19 t/s (deepseek-r1:1.5b)
 **Author:** JC1
 **Date:** 2026-04-30
 
-## Core Idea
-Replace the ollama middleman on Jetson with a lightweight C++ server that calls llama.cpp directly. Gives us control over CUDA init, CMA allocation, and fleet routing.
+## Core Idea (Mostly Solved)
+
+Replace the ollama middleman with a 51KB shared library (`libedge-cuda.so`) that links llama.cpp directly. Loaded into Python processes via ctypes (`edge_native.py`) or into Evennia MUD via `EdgePlatoModel` singleton.
+
+No HTTP. No subprocess. Just `dlopen()` → function call → text.
 
 ## Why Not Just Use Ollama?
-- Ollama 0.18.2 runner doesn't propagate LD_LIBRARY_PATH to CUDA backend
-- cuInit(0) returns 801 on Jetson nvgpu (no display context)
-- We can't control CMA allocation strategy
-- We can't add fleet-aware model routing
 
-## Approach
-### Short-term: C++ wrapper around llama.cpp
-Build a minimal server that:
-1. Opens `/dev/nvmap` directly for CMA memory
-2. Initializes CUDA with proper EGL context (gets around the display issue)
-3. Loads GGUF models via llama.cpp C API
-4. Exposes a simple pipe/HTTP interface
+| Factor | Ollama | edge-llama |
+|--------|--------|------------|
+| API | HTTP subprocess | In-process shared library |
+| Overhead | ~50ms serialization | ~2μs function call |
+| Embedding | Separate daemon | Link into any process |
+| Fleet routing | Ollama config only | Custom per-route prompts |
+| CMA control | No | Direct nvmap access planned |
 
-### Long-term: Shared library for flato  
-The same inference engine becomes a `.so` that `flato` (Fleet Plato MUD) links against directly.
+## Architecture
 
-## Dependencies
-- llama.cpp (build from source or use existing python package headers)
-- CUDA 12.6 (sm_87 target)
-- CMake 3.22+
-- g++ 11.4
-
-## Structure
 ```
-edge-llama/
-├── CMakeLists.txt
-├── src/
-│   ├── main.cpp          # Server entry point
-│   ├── engine.cpp/h      # llama.cpp wrapper
-│   ├── cma.cpp/h          # CMA memory management
-│   └── pipe.cpp/h         # IPC (Unix socket or pipe)
-├── models/               # Symlinks to GGUF files
-└── README.md
+Evennia MUD (Python)
+    │ ctypes
+    ▼
+libedge-cuda.so (51KB)
+    │ linking
+    ▼
+libllama.so (llama.cpp C API)
+    │
+    ▼
+model.gguf (deepseek-r1:1.5b, ~1GB)
 ```
 
-## Build Target
-- Platform: aarch64-linux (Jetson Orin Nano)
-- CUDA arch: sm_87
-- Output: `edge-llama` binary + `libedge-llama.so`
+## Current State
+
+- **✅ CPU inference**: 19 t/s via llama.cpp C API (CPU backend, `CUDA_VISIBLE_DEVICES=""`)
+- **✅ Python wrapper**: `EdgePlatoModel` singleton, thread-safe via `threading.Lock`
+- **✅ Streaming**: Per-token callback (`edge_generate_stream`) → Twisted reactor → telnet
+- **✅ Edge gateway integration**: `?native=true` routes through `libedge-cuda.so`
+- **✅ Auto-fallback**: 2s Ollama health check → native when down
+- **❌ GPU inference**: CMA pool depleted (1792KB/512MB). Fix: reboot with `cma=1024M`.
+
+## The Remaining Challenge: CMA
+
+NVIDIA's Jetson driver allocates CMA during first CUDA context creation and **never frees it**. After running ollama once, `cat /proc/meminfo` shows `CMA: 1792KB/524288KB`. Fix confirmed in `/boot/extlinux/extlinux.conf` — `cma=1024M` — needs a reboot.
+
+After reboot: ~1024MB CMA → CUDA works → GPU inference at ~3-5× CPU speed.
