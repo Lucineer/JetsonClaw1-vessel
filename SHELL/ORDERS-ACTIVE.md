@@ -1,26 +1,18 @@
 # Active Orders
 
-## 2026-04-30 13:47 AKDT — Synergize All Three Orgs (Casey)
+## 2026-04-30 22:40 AKDT — Night Continue (Casey)
 **Status:** IN PROGRESS 🔄
-**Directive:** Synergize everything across lucineer, cocapn, and superinstance orgs on GitHub. Star everything not yet starred. Fork, PR, merge as much as possible.
+**Directive:** Go in order, do them all, push often, check fleet.
 
-**Plan:**
-1. **Lucineer org** — My home base. Inventory repos, star everything, push what I have
-2. **cocapn org** — The company/public face. Inventory, star, fork, contribute
-3. **SuperInstance org** — Fleet infrastructure. 1,205 repos — big. Inventory, star key ones, fork/PR where I can integrate edge-llama and streaming work
+**Order:**
+1. ✅ Plato-Mythos MUD Integration — committed, pushed (a7e4b9d)
+2. [ ] Wire native as auto-fallback in edge-gateway
+3. [ ] SSE streaming from NativeInference through gateway
+4. [ ] Fix evennia-plato auto-restart loop
+5. [ ] Deploy flato MUD (C telnet + native AI)
+6. [ ] Push edge-llama repo to GitHub
+7. [ ] Fleet check-in (bottle + Oracle1)
 
-**Implementation:**
-- Use `gh` CLI for star/inventory
-- For fork+PR: edge-llama integration into cocapn-plato, streaming into cocapn-core
-- Merge: bring fleet improvements back into my repos
+**Plan:** `SHELL/EXECUTION-PLANS/2026-04-30-night-continue.md`
 
-### Pending
-- [ ] Inventory Lucineer org
-- [ ] Star all Lucineer repos
-- [ ] Inventory cocapn org
-- [ ] Star all cocapn repos  
-- [ ] Inventory SuperInstance org (key repos)
-- [ ] Star SuperInstance repos
-- [ ] Fork + PR: edge-llama integration
-- [ ] Fork + PR: streaming MUD integration
-- [ ] Merge fleet improvements back
+**Previous orders history:** Synergy order (2026-04-30 13:47) — COMPLETE ✅ All Lucineer & SuperInstance repos starred, 2 forks created with edge integration, bottles to Oracle1
