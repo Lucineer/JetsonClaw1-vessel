@@ -384,6 +384,78 @@ class NativeInference:
         except Exception as e:
             self._last_error = str(e)
             return {"text": "", "tokens": 0, "tps": 0.0, "backend": "none", "error": str(e)}
+
+    def generate_stream(self, prompt: str, max_tokens: int = 100,
+                        callback=None):
+        """Generate text with token-by-token callback.
+
+        Uses edge_generate_stream C API which matches this signature:
+        char* edge_generate_stream(ctx, prompt, max_tokens, &out_len,
+                                    &new_tokens, callback, user_ctx)
+
+        Each token piece fires callback(text_chunk, total_tokens_so_far).
+        The full string is still allocated but we free it immediately.
+
+        Args:
+            prompt: Input text
+            max_tokens: Max tokens to generate
+            callback: Callable(token_text: str, token_count: int) -> None
+        """
+        if not self._loaded and not self.load():
+            if callback:
+                callback("[Error: native inference unavailable]", 0)
+            return
+        try:
+            import ctypes
+            # Real C signature:
+            # edge_generate_stream(ctx, prompt, max_tokens, &out_len,
+            #                       &new_tokens, callback, user_ctx)
+            self._lib.edge_generate_stream.restype = ctypes.POINTER(ctypes.c_char)
+            self._lib.edge_generate_stream.argtypes = [
+                ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int32,
+                ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_int32),
+                ctypes.c_void_p, ctypes.c_void_p,
+            ]
+            prompt_bytes = prompt.encode('utf-8')
+
+            out_len = ctypes.c_int32(0)
+            new_tokens = ctypes.c_int32(0)
+
+            # CFUNCTYPE callback: void(const char* piece, int32_t len, void* user_ctx)
+            CB_FUNC = ctypes.CFUNCTYPE(None, ctypes.c_char_p, ctypes.c_int32, ctypes.c_void_p)
+
+            def _make_cb(caller_callback):
+                def _c_cb(text_ptr, count, ctx):
+                    try:
+                        if text_ptr and count > 0:
+                            chunk = ctypes.string_at(text_ptr, count).decode('utf-8', errors='replace')
+                        else:
+                            chunk = ""
+                    except Exception:
+                        chunk = ""
+                    if caller_callback:
+                        caller_callback(chunk, count)
+                return _c_cb
+
+            c_callback = CB_FUNC(_make_cb(callback))
+
+            full_text_ptr = self._lib.edge_generate_stream(
+                self._impl, prompt_bytes,
+                ctypes.c_int32(max_tokens),
+                ctypes.byref(out_len), ctypes.byref(new_tokens),
+                c_callback, None,
+            )
+
+            # Free the full string (we already got it token-by-token via callback)
+            if full_text_ptr:
+                self._lib.edge_free_string(full_text_ptr)
+
+            # Keep callback alive until here
+            _keep_cb = c_callback
+        except Exception as e:
+            self._last_error = str(e)
+            if callback:
+                callback(f"[Error: {e}]", 0)
     
     @property
     def backend_name(self) -> str:
@@ -1014,7 +1086,8 @@ class GatewayHandler(BaseHTTPRequestHandler):
                             ollama_messages.append(m)
                     self._native_chat_fallback(
                         body, ollama_messages, system_msg,
-                        raw_model, raw_model, options, "forced native")
+                        raw_model, raw_model, options, "forced native",
+                        stream=body.get("stream", False))
                     return
             self._json({"error": {"message": "Native inference unavailable",
                                   "type": "native_unavailable"}}, 503)
@@ -1075,18 +1148,11 @@ class GatewayHandler(BaseHTTPRequestHandler):
 
         # ── Quick Ollama health check — skip timeout if Ollama is down ──
         _ollama_down = False
-        if stream:
-            try:
-                from urllib.request import urlopen as _urlo
-                _urlo(f"{OLLAMA_URL}/api/tags", timeout=2)
-            except Exception:
-                _ollama_down = True
-        else:
-            try:
-                from urllib.request import urlopen as _urlo
-                _urlo(f"{OLLAMA_URL}/api/tags", timeout=2)
-            except Exception:
-                _ollama_down = True
+        try:
+            from urllib.request import urlopen as _urlo
+            _urlo(f"{OLLAMA_URL}/api/tags", timeout=2)
+        except Exception:
+            _ollama_down = True
 
         if _ollama_down:
             native = get_native_backend()
@@ -1096,7 +1162,8 @@ class GatewayHandler(BaseHTTPRequestHandler):
                     self._native_chat_fallback(
                         body, ollama_messages, system_msg,
                         resolved_model, raw_model, options,
-                        "Ollama unreachable (auto-fallback to native)")
+                        "Ollama unreachable (auto-fallback to native)",
+                        stream=stream)
                     return
             # Native unavailable too — try Ollama anyway (may eventually timeout)
 
@@ -1161,11 +1228,12 @@ class GatewayHandler(BaseHTTPRequestHandler):
             })
 
     def _native_chat_fallback(self, body, ollama_messages, system_msg,
-                              resolved_model, raw_model, options, ollama_error):
+                              resolved_model, raw_model, options, ollama_error,
+                              stream=False):
         """Fallback handler: run inference via libedge-cuda.so when Ollama is down.
         
         Builds a prompt from the messages, runs native inference, and returns
-        an OpenAI-compatible response. Non-streaming only.
+        an OpenAI-compatible response. Supports both streaming and non-streaming.
         """
         native = get_native_backend()
         if not native._loaded and not native.load():
@@ -1187,40 +1255,99 @@ class GatewayHandler(BaseHTTPRequestHandler):
         prompt = "\n".join(prompt_parts) + "\n[Assistant]"
 
         max_tokens = options.get("num_predict", 2048) if isinstance(options, dict) else 2048
+        backend_name = None
+        tokens = 0
         start_t = time.time()
-        native_result = native.generate(prompt, max_tokens=max_tokens)
-        elapsed_ms = (time.time() - start_t) * 1000
 
-        if native_result.get("backend", "") not in ("none", ""):
-            prompt_tokens = max(len(prompt) // 4, 1)
-            tokens = native_result.get("tokens", 0)
-            completion_tokens = max(tokens, 1)
-            with _stats_lock:
-                usage_stats["total_prompt_tokens"] += prompt_tokens
-                usage_stats["total_completion_tokens"] += completion_tokens
-            store.log_usage(resolved_model + " (native)", "/v1/chat/completions",
-                           prompt_tokens, completion_tokens, elapsed_ms)
-            self._json({
-                "id": f"chatcmpl-native-{int(time.time()*1000)}",
-                "object": "chat.completion",
+        if stream:
+            # ── SSE streaming via native generate_stream callback ──
+            self._stream_sse()
+            chat_id = f"chatcmpl-native-{threading.get_ident()}-{int(time.time()*1000)}"
+            chunk_idx = 0
+            collected_text = ""
+
+            def _sse_cb(token_text, token_count):
+                nonlocal chunk_idx, collected_text, backend_name, tokens
+                collected_text += token_text
+                tokens = token_count
+                chunk = {
+                    "id": chat_id,
+                    "object": "chat.completion.chunk",
+                    "created": int(time.time()),
+                    "model": raw_model,
+                    "choices": [{
+                        "index": 0,
+                        "delta": {"content": token_text},
+                        "finish_reason": None,
+                    }]
+                }
+                self._send_sse(chunk)
+                chunk_idx += 1
+
+            native.generate_stream(prompt, max_tokens=max_tokens, callback=_sse_cb)
+
+            # Send final done chunk
+            elapsed_ms = (time.time() - start_t) * 1000
+            try:
+                backend_name = native.backend_name
+            except:
+                backend_name = "llama.cpp"
+            done_chunk = {
+                "id": chat_id,
+                "object": "chat.completion.chunk",
                 "created": int(time.time()),
                 "model": raw_model,
-                "backend": native_result.get("backend", "native"),
-                "tps": native_result.get("tps", 0),
                 "choices": [{
                     "index": 0,
-                    "message": {"role": "assistant", "content": native_result["text"]},
+                    "delta": {},
                     "finish_reason": "stop",
                 }],
-                "usage": {
-                    "prompt_tokens": prompt_tokens,
-                    "completion_tokens": completion_tokens,
-                    "total_tokens": prompt_tokens + completion_tokens,
-                },
-            })
+            }
+            self._send_sse(done_chunk)
+            self._send_sse_done()
+
+            log_label = f"{resolved_model} (native-stream)"
+            with _stats_lock:
+                usage_stats["total_prompt_tokens"] += max(len(prompt) // 4, 1)
+                usage_stats["total_completion_tokens"] += max(tokens, 1)
+            store.log_usage(log_label, "/v1/chat/completions",
+                           max(len(prompt) // 4, 1), max(tokens, 1), elapsed_ms)
         else:
-            self._json({"error": {"message": f"Ollama down and native inference failed: {native_result.get('error', 'unknown')} (ollama: {ollama_error})",
-                                  "type": "upstream_error"}}, 502)
+            # ── Non-streaming ──
+            native_result = native.generate(prompt, max_tokens=max_tokens)
+            elapsed_ms = (time.time() - start_t) * 1000
+
+            if native_result.get("backend", "") not in ("none", ""):
+                prompt_tokens = max(len(prompt) // 4, 1)
+                tokens = native_result.get("tokens", 0)
+                completion_tokens = max(tokens, 1)
+                backend_name = native_result.get("backend", "native")
+                with _stats_lock:
+                    usage_stats["total_prompt_tokens"] += prompt_tokens
+                    usage_stats["total_completion_tokens"] += completion_tokens
+                store.log_usage(resolved_model + " (native)", "/v1/chat/completions",
+                               prompt_tokens, completion_tokens, elapsed_ms)
+                self._json({
+                    "id": f"chatcmpl-native-{int(time.time()*1000)}",
+                    "object": "chat.completion",
+                    "created": int(time.time()),
+                    "model": raw_model,
+                    "backend": backend_name,
+                    "tps": native_result.get("tps", 0),
+                    "choices": [{
+                        "index": 0,
+                        "message": {"role": "assistant", "content": native_result["text"]},
+                        "finish_reason": "stop",
+                    }],
+                    "usage": {
+                        "prompt_tokens": prompt_tokens,
+                        "completion_tokens": completion_tokens,
+                        "total_tokens": prompt_tokens + completion_tokens,
+                    },
+                })
+            else:
+                self._json({"error": {"message": f"Ollama down and native inference failed: {native_result.get('error', 'unknown')} (ollama: {ollama_error})",
+                                      "type": "upstream_error"}}, 502)
 
     def _stream_chat(self, ollama_data, resolved_model, raw_model):
         """Stream chat: reads NDJSON from Ollama, emits OpenAI SSE to client.
