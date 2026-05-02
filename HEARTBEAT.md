@@ -1,5 +1,5 @@
 # HEARTBEAT.md
-## 2026-05-01 12:56 AKDT — v0.8.0: Fleet Coordination Innovations
+## 2026-05-01 16:32 AKDT — v0.9.0: Fleet Innovations (5/6 Complete)
 
 ### ✅ Shipped This Session
 - **Deadman Switch Protocol** (fleet-innovations #3) in `mesh-bridge.py`:
@@ -16,34 +16,32 @@
 - **Integration Bottle** for fleet: full chain documented
 - **All 3 repos pushed**: edge-llama, plato-jetson, workspace (main)
 
-### Research from Oracle1 Fleet Innovations
-| Mechanism | Status | Where |
-|-----------|--------|-------|
-| #1 Hermit Crab Migration | ✅ flato C MUD | `/migrate` cmd, shell identity |
-| #2 Stream Processing Pipeline | ⏳ Next | edge-gateway streaming |
-| #3 Deadman Switch Protocol | ✅ mesh-bridge.py | 3-stage + election |
-| #4 PLATO PKI | ⏳ Next | Evennia cert commands |
-| #5 Compiled Fleet | 🔭 Future | C17 fleet-agent prototype |
-| #6 True Lambda | 🔭 Future | Serverless inference |
+### Fleet Innovations — 5/6 Complete ✅
+| # | Mechanism | Status | Where |
+|---|-----------|--------|-------|
+| 1 | Hermit Crab Migration | ✅ | `flato.c` /migrate |
+| 2 | Stream Processing Pipeline | ✅ | `edge-gateway.py` /v1/stream/process |
+| 3 | Deadman Switch Protocol | ✅ | `mesh-bridge.py` 3-stage + election |
+| 4 | PLATO PKI | ✅ | `commands/plato_pki.py` Ed25519 |
+| 5 | Compiled Fleet | ⏳ | C17 fleet-agent prototype |
+| 6 | True Lambda | ✅ | `true_lambda.py` serverless dispatch |
 
-### Running Services (14 total)
+### Running Services (8)
 | Service | Port | Status |
 |---------|------|--------|
-| openclaw-gateway | — | ✅ |
-| edge-gateway | 11435 | ✅ native fallback, streaming |
+| edge-gateway | 11435 | ✅ streaming, pipeline, native |
 | edge-chat | 8081 | ✅ |
 | edge-monitor-web | 8082 | ✅ |
-| flato MUD | 4003 | ✅ C telnet with hermit crab + deadman |
-| Evennia Plato | 4000/4001/4002 | ✅ |
-| mesh-sync | timer | ✅ |
+| flato MUD | 4003 | ✅ hermit crab, deadman, think |
+| Evennia Plato | 4000-4002 | ✅ PKI, mythos, native infer |
+| mesh-sync | timer | ✅ deadman + trust |
 | Ollama | 11434 | ✅ deepseek-r1:1.5b |
 
 ### 🚧 Blocked
-- GPU inference — CMA pool depleted, needs reboot for cma=1024M
-- Matrix bridge — port 6168 rejects jc1 registration
+- GPU inference — CMA depleted, needs reboot with cma=1024M
+- Matrix bridge — jc1 registration rejected
 - Forgemaster push — 403 on SuperInstance repos
 
 ### 🔜 Next
-1. Stream Processing Pipeline (#2) — pipe flato → edge-gateway for real-time data flow
-2. PLATO PKI (#4) — cert-based agent identity in Evennia
-3. Reboot when Casey's ready — unlock CUDA, 3-5x inference speedup
+1. Compiled Fleet (#5) — C17 fleet-agent prototype
+2. Reboot for CUDA (cma=1024M)
