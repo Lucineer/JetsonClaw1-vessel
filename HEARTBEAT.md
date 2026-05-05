@@ -16,14 +16,14 @@
 - **Integration Bottle** for fleet: full chain documented
 - **All 3 repos pushed**: edge-llama, plato-jetson, workspace (main)
 
-### Fleet Innovations — 5/6 Complete ✅
+### Fleet Innovations — 6/6 Complete ✅
 | # | Mechanism | Status | Where |
 |---|-----------|--------|-------|
 | 1 | Hermit Crab Migration | ✅ | `flato.c` /migrate |
 | 2 | Stream Processing Pipeline | ✅ | `edge-gateway.py` /v1/stream/process |
 | 3 | Deadman Switch Protocol | ✅ | `mesh-bridge.py` 3-stage + election |
 | 4 | PLATO PKI | ✅ | `commands/plato_pki.py` Ed25519 |
-| 5 | Compiled Fleet | ⏳ | C17 fleet-agent prototype |
+| 5 | Compiled Fleet | ✅ | `fleet-agent.c` C17 binary |
 | 6 | True Lambda | ✅ | `true_lambda.py` serverless dispatch |
 
 ### Running Services (8)
@@ -43,5 +43,6 @@
 - Forgemaster push — 403 on SuperInstance repos
 
 ### 🔜 Next
-1. Compiled Fleet (#5) — C17 fleet-agent prototype
-2. Reboot for CUDA (cma=1024M)
+1. Reboot for CUDA (cma=1024M) — unlock 3-5x inference
+2. Matrix bridge jc1 registration
+3. Production mesh: integrate fleet-agent into systemd timer

@@ -13,16 +13,19 @@
 6. ✅ Push edge-llama repo to GitHub — v0.2 (3ebaf57)
 7. ✅ Fleet check-in — Oracle1 alive, trust scores updated, bottle dropped
 
-## Fleet Innovations — 5/6 COMPLETE ✅
+## Fleet Innovations — 6/6 COMPLETE ✅
 
 | # | Mechanism | Status | Where |
 |---|-----------|--------|-------|
 | 1 | Hermit Crab Migration | ✅ | `flato.c` /migrate command |
 | 2 | Stream Processing Pipeline | ✅ | `edge-gateway.py` POST /v1/stream/process |
-| 3 | Deadman Switch Protocol | ✅ | `mesh-bridge.py` 3-stage + election |
+| 3 | Deadman Switch Protocol | ✅ | `mesh-bridge.py` + `fleet-agent.c` |
 | 4 | PLATO PKI | ✅ | `commands/plato_pki.py` Ed25519 certs |
-| 5 | Compiled Fleet | ⏳ | C17 fleet-agent prototype |
+| 5 | Compiled Fleet | ✅ | `fleet-agent.c` C17 binary |
 | 6 | True Lambda | ✅ | `true_lambda.py` serverless dispatch |
+
+## All Items Complete ✅
+All 7 night-continue items + all 6 fleet innovations shipped.
 
 ## Pending
 - GPU inference via CUDA — CMA depleted, needs reboot with cma=1024M
