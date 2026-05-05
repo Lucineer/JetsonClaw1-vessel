@@ -1,57 +1,38 @@
 # HEARTBEAT.md
-## 2026-05-05 13:14 AKDT — v0.11.0: FLUX VM on Jetson + Org Audit Complete
+## 2026-05-05 14:25 AKDT — v0.12.0: Sensor Pipeline + Fleet Bottles
 
 ### ✅ Shipped This Session
-- **Deadman Switch Protocol** (fleet-innovations #3) in `mesh-bridge.py`:
-  - SQLite-backed heartbeat tracking with 3-stage escalation
-  - `active → degraded → orphaned → handoff` lifecycle
-  - Trust-based auto-election picks successor on agent loss
-  - Committed (conn.commit bug fixed), verified working
-  - Per-agent grace periods: 5-min Oracle1, 30-min Forgemaster
-- **Hermit Crab Migration** (fleet-innovations #1) in flato.c:
-  - `/migrate` command shows JC1 shell identity for successor handoff
-  - `/deadman` command references mesh bridge for fleet status
-  - Updated help text, compiled and deployed
-- **Plato-Mythos Integration** (prior session) — pure numpy TilesAsKV engine in MUD
-- **Integration Bottle** for fleet: full chain documented
-- **All 3 repos pushed**: edge-llama, plato-jetson, workspace (main)
+- **Fleet bottles to 3 repos**: edge-llama/messages/, workspace/bottles/, plato-jetson/world/bottles/
+- **sensor-pipeline.py** — hardware telemetry → PLATO tiles (CPU, mem, disk, thermal, net, uptime)
+- **sensor-pipeline systemd timer** — every 5 minutes, 5-6 tiles per cycle
+- **plato-server tiles**: 33 → 47 (and growing with sensor + research pipelines)
+- **jc1-research-agent timer re-enabled**
+- **jc1-research repo pushed** → SuperInstance/jc1-research with agent + sync code
+- **Oracle1 contact**: beacon + bottle landed on shell
 
-### Fleet Innovations — 6/6 Complete ✅
-| # | Mechanism | Status | Where |
-|---|-----------|--------|-------|
-| 1 | Hermit Crab Migration | ✅ | `flato.c` /migrate |
-| 2 | Stream Processing Pipeline | ✅ | `edge-gateway.py` /v1/stream/process |
-| 3 | Deadman Switch Protocol | ✅ | `mesh-bridge.py` 3-stage + election |
-| 4 | PLATO PKI | ✅ | `commands/plato_pki.py` Ed25519 |
-| 5 | Compiled Fleet | ✅ | `fleet-agent.c` C17 binary |
-| 6 | True Lambda | ✅ | `true_lambda.py` serverless dispatch |
-
-### Running Services (8)
+### Running Services (11)
 | Service | Port | Status |
 |---------|------|--------|
-| edge-gateway | 11435 | ✅ streaming, pipeline, native |
+| edge-gateway | 11435 | ✅ |
 | edge-chat | 8081 | ✅ |
 | edge-monitor-web | 8082 | ✅ |
-| flato MUD | 4003 | ✅ hermit crab, deadman, think |
-| Evennia Plato | 4000-4002 | ✅ PKI, mythos, native infer |
-| mesh-sync | timer | ✅ deadman + trust |
-| Ollama | 11434 | ✅ deepseek-r1:1.5b |
+| evennia-plato | 4000-4002 | ✅ |
+| flato-mud | 4003 | ✅ |
+| plato-server | 8847 | ✅ 47 tiles |
+| sensor-pipeline | timer(5m) | ✅ NEW |
+| plato-sync | timer(5m) | ✅ |
+| jc1-research | timer(5m) | ✅ |
+| jc1-telemetry | timer(5m) | ✅ |
+| mesh-sync | timer(60m) | ✅ |
 
-### ✅ This Session
-- **SuperInstance Org Audit**: 22+ critical repos analyzed
-- **flux-runtime-c compiled on Jetson**: C11 FLUX VM, 46/46 tests PASS
-- **FLUX VM in fleet-agent.c**: `flux`/`flux-run` commands for bytecode execution
-- **plato-sdk-unified installed**: FleetConsciousness with 8 subsystems
-- **edge-fleet-mesh-v2 architecture**: docs/design/edge-fleet-mesh-v2.md
-- **29 repos starred**: all critical SuperInstance repos connected
-- **All 3 repos pushed**: edge-llama v0.11.0, plato-jetson, workspace
+### 5 Active Timers
+plato-sync, jc1-research, jc1-telemetry, sensor-pipeline, mesh-sync
 
 ### 🚧 Blocked
-- GPU inference — CMA depleted, needs reboot with cma=1024M
-- Matrix bridge — jc1 registration rejected
-- Forgemaster push — 403 on SuperInstance repos
+- GPU — CMA=0, nvcc exists but cuInit segfaults
+- Matrix bridge — jc1-bot known but not authenticated for DM
 
 ### 🔜 Next
-1. Integrate FleetConsciousness into Evennia @think
-2. Port sensor-plato-bridge as systemd service
-3. Reboot for CUDA (cma=1024M) — unlock flux-cuda GPU kernels
+1. Warp-as-room CPU simulation (numpy port of gpu-native-room-inference)
+2. Sensor pipeline → fleet tile sync (cross-repo)
+3. Reboot investigation for GPU
