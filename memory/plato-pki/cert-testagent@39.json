@@ -1,0 +1,14 @@
+{
+  "agent": "testagent",
+  "fingerprint": "5b274901ca9449b7",
+  "issued": "2026-05-01T16:24:18.978538",
+  "expires": "2027-05-01T16:24:18.978561",
+  "scope": {
+    "room_id": 39,
+    "room_name": "Bridge"
+  },
+  "roles": [
+    "engineer"
+  ],
+  "signature": "tZNtWxewyHA+NnD1DXyEDoqDsIhKbJQoMmvUI0DPOwY0pcUJGrNn8bZ+l4vpCURqLJIy3hXhUm+QyHYjAuxpAQ=="
+}

@@ -1,0 +1,23 @@
+{
+  "agents": {
+    "testagent": {
+      "fingerprint": "5b274901ca9449b7",
+      "created": "2026-05-01T16:24:18.977080",
+      "pubkey_file": "/home/lucineer/.openclaw/workspace/memory/plato-pki/testagent-pubkey.b64",
+      "privkey_file": "/home/lucineer/.openclaw/workspace/memory/plato-pki/testagent-privkey.b64",
+      "has_passphrase": false
+    }
+  },
+  "certs": [
+    {
+      "agent": "testagent",
+      "fingerprint": "5b274901ca9449b7",
+      "room_id": 39,
+      "issued": "2026-05-01T16:24:18.978538",
+      "expires": "2027-05-01T16:24:18.978561",
+      "roles": [
+        "engineer"
+      ]
+    }
+  ]
+}
