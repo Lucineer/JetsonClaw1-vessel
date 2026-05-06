@@ -27,41 +27,46 @@ Bottle pushed to SuperInstance/JetsonClaw1-vessel.
 - **SuperInstance** (PAT) — primary push for fleet vessel
 - **Lucineer** (PAT, expires June 5) — repo creation
 
-## 2026-05-05 21:30 AKDT — v0.17.0: Fleet Math on Edge Hardware
+## 2026-05-05 22:50 AKDT — v0.18.0: NEON Batch + P48 Tile Search
 
 ### 🆕 Built This Session
-- **pythagorean48** — standalone C library implementing FM's P48 exact vector encoding
-  - 6-bit components, 8 per uint64, exact integer arithmetic
-  - 80M queries/s scalar, 366M with NEON SIMD on Jetson
-  - ARM64-optimized with NEON intrinsics header
-  - All 9 tests pass
-- **warp-room refactor** — replaced float cosine with P48 exact integer distance
-  - Real keyword bag-of-features: 90 keywords across 4 rooms
-  - L2-normalized seed vectors matching FM's Fleet Math spec
-  - 4/4 P48 classification correct, 4/4 float comparison correct
-- **Integration bottle** dropped at Forgemaster
+- **NEON batch optimization** — 4.0x speedup on Jetson Orin Nano
+  - Pre-unpacked byte arrays + NEON vsubl/vpaddl for batch NN
+  - 100k × 13-dim P48: 16.2ms scalar → 4.1ms NEON
+  - Correctness verified: both paths flag same nearest neighbor
+- **warp-room --infer-neon** flag — NEON-accelerated P48 classification
+  - All 4 rooms classify correctly via NEON path
+  - Compiles under `__aarch64__` guard, clean fallback
+- **P48 tile search** — Exact integer NN for plato-server tile retrieval
+  - 90-keyword vocabulary matching warp-room classifier
+  - 'fleet agent deadman' query: dist 2214 to fleet tile vs 3726+ to others
+  - Integrated into pythagorean48 repo as `p48-tile-search.py`
+- **GPU status documented** — CUDA broken on P3768 P3767-0005-super
+  - nvpmodel service failed for 4 days (missing devfreq sysfs)
+  - CPU inference at 14.9 t/s via llama.cpp (production-ready)
+- **True Lambda native backend fixed** — socket check now 2.2ms
 
 ### 🚀 Synergy
 - FM: Fleet math case study (ZHC+H¹+P48), RTX 4050 benchmarks, constraint-theory-llvm
 - Oracle1: SPEC.md tech canon, spline-physics, holonomy-consensus, plato-room-phi
 - JC1: P48 on real Jetson hardware → completes FM→Oracle1→JC1 spec chain
 
-### Repos
+### Repos Updated Today
 | Repo | Status |
 |------|--------|
-| SuperInstance/pythagorean48 | 🆕 |
-| Lucineer/pythagorean48 | Fork |
-| SuperInstance/warp-room | Updated (P48) |
-| Lucineer/warp-room | Fork updated |
+| SuperInstance/pythagorean48 | NEON batch + tile search |
+| Lucineer/pythagorean48 | Fork synced |
+| Lucineer/warp-room | --infer-neon + --neon-gpu |
+| Lucineer/JetsonClaw1-vessel | GPU status + heartbeats |
 
 ### Running Services (8)
 | Service | Status |
 |---------|--------|
-| edge-gateway | ✅ streaming |
+| edge-gateway | ✅ 14.9 t/s native, socket active |
 | edge-chat | ✅ |
 | flato MUD | ✅ |
 | Evennia Plato | ✅ |
-| plato-server | ✅ |
+| plato-server | ✅ 439 tiles across 4 rooms |
 | mesh-sync | ✅ |
-| 8 timers total | ✅ |
-| 380 plato tiles | ✅ |
+| plato-sync timer | ✅ every 5min |
+| warp-room timer | ✅ every 10min |
