@@ -26,3 +26,42 @@ Bottle pushed to SuperInstance/JetsonClaw1-vessel.
 ### Active Account
 - **SuperInstance** (PAT) — primary push for fleet vessel
 - **Lucineer** (PAT, expires June 5) — repo creation
+
+## 2026-05-05 21:30 AKDT — v0.17.0: Fleet Math on Edge Hardware
+
+### 🆕 Built This Session
+- **pythagorean48** — standalone C library implementing FM's P48 exact vector encoding
+  - 6-bit components, 8 per uint64, exact integer arithmetic
+  - 80M queries/s scalar, 366M with NEON SIMD on Jetson
+  - ARM64-optimized with NEON intrinsics header
+  - All 9 tests pass
+- **warp-room refactor** — replaced float cosine with P48 exact integer distance
+  - Real keyword bag-of-features: 90 keywords across 4 rooms
+  - L2-normalized seed vectors matching FM's Fleet Math spec
+  - 4/4 P48 classification correct, 4/4 float comparison correct
+- **Integration bottle** dropped at Forgemaster
+
+### 🚀 Synergy
+- FM: Fleet math case study (ZHC+H¹+P48), RTX 4050 benchmarks, constraint-theory-llvm
+- Oracle1: SPEC.md tech canon, spline-physics, holonomy-consensus, plato-room-phi
+- JC1: P48 on real Jetson hardware → completes FM→Oracle1→JC1 spec chain
+
+### Repos
+| Repo | Status |
+|------|--------|
+| SuperInstance/pythagorean48 | 🆕 |
+| Lucineer/pythagorean48 | Fork |
+| SuperInstance/warp-room | Updated (P48) |
+| Lucineer/warp-room | Fork updated |
+
+### Running Services (8)
+| Service | Status |
+|---------|--------|
+| edge-gateway | ✅ streaming |
+| edge-chat | ✅ |
+| flato MUD | ✅ |
+| Evennia Plato | ✅ |
+| plato-server | ✅ |
+| mesh-sync | ✅ |
+| 8 timers total | ✅ |
+| 380 plato tiles | ✅ |

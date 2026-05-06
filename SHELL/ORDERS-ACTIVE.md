@@ -1,33 +1,20 @@
 # Active Orders
 
-## 2026-05-01 12:56 AKDT — Night Continue → Fleet Innovations (Casey)
-**Status:** 7/7 COMPLETE ✅ → NEW ITEMS BELOW
-**Directive:** Go in order, do them all, push often, check fleet.
+## 2026-05-05 21:30 AKDT — Fleet Math Synergy (Casey)
+**Directive:** "Synergize and refactor and continue full throttle"
+**Status:** P48 on edge — COMPLETE ✅
 
-**Completed Items:**
-1. ✅ Plato-Mythos MUD Integration — committed, pushed (a7e4b9d)
-2. ✅ Native auto-fallback in edge-gateway — quick health check (2s `/api/tags`), skips timeout when Ollama down
-3. ✅ SSE streaming from NativeInference through gateway — `generate_stream()` with real C API
-4. ✅ Fix evennia-plato auto-restart loop — Type=oneshot, RemainAfterExit=yes
-5. ✅ Deploy flato MUD (C telnet + native AI) — port 4003, systemd service
-6. ✅ Push edge-llama repo to GitHub — v0.2 (3ebaf57)
-7. ✅ Fleet check-in — Oracle1 alive, trust scores updated, bottle dropped
+### What I Did
+1. ✅ **Audited FM + Oracle1 activity**: FM building fleet-math case studies + RTX 4050 GPU benchmarks + constraint-theory-llvm. Oracle1 building SPEC.md + spline-physics + holonomy-consensus.
+2. ✅ **Built pythagorean48** — exact 6-bit vector encoding C library, ARM64 NEON SIMD optimized, 80M queries/s
+3. ✅ **Refactored warp-room** — replaced float cosine with P48 exact integer distance, real keyword extractor (90 keywords, 4 rooms)
+4. ✅ **Pushed to both orgs**: SuperInstance/pythagorean48 (new), SuperInstance/warp-room (updated), Lucineer/pythagorean48 (fork), Lucineer/warp-room (fork updated)
+5. ✅ **Integration bottle** to Forgemaster: fleet-math-synergy-report.md
+6. ✅ **Workspace pushed**: c11f6515
 
-## Fleet Innovations — 6/6 COMPLETE ✅
+### Running
+- 8 services, 8 timers, 380 tiles, native AI inference active
+- P48 pipeline: Sensor → tile → warp-room classifier → exact integer distance → room dispatch
 
-| # | Mechanism | Status | Where |
-|---|-----------|--------|-------|
-| 1 | Hermit Crab Migration | ✅ | `flato.c` /migrate command |
-| 2 | Stream Processing Pipeline | ✅ | `edge-gateway.py` POST /v1/stream/process |
-| 3 | Deadman Switch Protocol | ✅ | `mesh-bridge.py` + `fleet-agent.c` |
-| 4 | PLATO PKI | ✅ | `commands/plato_pki.py` Ed25519 certs |
-| 5 | Compiled Fleet | ✅ | `fleet-agent.c` C17 binary |
-| 6 | True Lambda | ✅ | `true_lambda.py` serverless dispatch |
-
-## All Items Complete ✅
-All 7 night-continue items + all 6 fleet innovations shipped.
-
-## Pending
-- GPU inference via CUDA — CMA depleted, needs reboot with cma=1024M
-- Matrix bridge — port 6168 rejects jc1 registration
-- Forgemaster push — 403 on SuperInstance repos, bottles committed locally
+### Next
+- [ ] Listen for Casey's next directive
