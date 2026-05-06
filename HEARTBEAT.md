@@ -1,27 +1,20 @@
 # HEARTBEAT.md
-## 2026-05-05 16:04 AKDT — v0.13.0: Warp-as-Room + 6 Timers
+## 2026-05-05 16:40 AKDT — v0.14.0: New Repos for Revolutionary Ideas
 
-### ✅ Shipped
-- **warp_room.py** — numpy port of SuperInstance/gpu-native-room-inference
-  - GPU warp → bigram TF vectors. Room collective → dot product.
-  - 4 room profiles, 97-dimensional feature space, online learning
-  - systemd timer every 10 minutes
-- **sensor-pipeline.py** — hardware telemetry → PLATO tiles, 5-6/cycle
-- **Fleet bottles** in 3 repos (edge-llama/, workspace/, plato-jetson/)
-- **jc1-research repo** pushed to SuperInstance with agent + sync code
+### ✅ New Repos Created
+- **SuperInstance/old-school-machine-wisdom** — 376-line research doc on 5 forgotten
+  computing techniques (FORTH, DGD, MUD1, MUDDL, LISP Machines). Public.
+- **SuperInstance/warp-room** — C17 subroutine-threaded tile classifier. Compiles
+  clean ARM64 first try. Shared memory via shm_open. NEON SIMD ready.
+- ⚠️ Awaiting fork to Lucineer org — SuperInstance token can't create Lucineer repos.
+  Need Casey to add SuperInstance as org member.
 
 ### Running (11 services + 6 timers)
-| Timer | Interval | Tiles fed |
-|-------|----------|-----------|
-| sensor-pipeline | 5min | ✅ 5-6 per cycle |
-| plato-sync | 5min | ✅ Evennia ↔ plato |
-| jc1-research | 5min | ✅ CCC research fork |
-| jc1-telemetry | 5min | ✅ system metrics |
-| warp-room | 10min | ✅ NEW — room classifier |
-| mesh-sync | 60min | ✅ fleet deadman |
+- warp-room timer every 10min trains on all tiles
+- sensor-pipeline, plato-sync, jc1-research, jc1-telemetry, mesh-sync all active
+- edge-gateway, edge-chat, edge-monitor-web, flato MUD, Evennia Plato, Ollama
 
-### PLATO: 126+ tiles, 4 rooms, 4 agents
-
-### Blocked
-- GPU — CMA=0, cuInit segfaults
-- Matrix jc1-bot — not authed for DM on Oracle1 bridge
+### Next
+1. Casey: add SuperInstance to Lucineer org → fork repos properly
+2. Compile warp-room NEON JIT path
+3. Start Phase 2: trampoline dispatch for new rooms
