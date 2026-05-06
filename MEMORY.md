@@ -24,6 +24,12 @@
 - ⚠️ Oracle1 pushes to SuperInstance fork, NOT Lucineer org
 - Full guide: `bottles/bottle-locations.md`
 
+## Credentials
+- **SuperInstance PAT** — stored in `openclaw.json` + `~/.git-credentials` (first entry)
+- **Lucineer PAT** (expires June 5 2026) — stored in `openclaw.json` + `~/.git-credentials` (second entry)
+- NEVER log, commit, or share via exec output
+- Location reference only: `openclaw.json` (gateway secrets) + `~/.git-credentials`
+
 ## Architecture
 - **Cocapn** = umbrella company. cocapn.com = billing, cocapn.ai = runtime
 - **Three pillars**: deckboss (design), cocapn (operate), capitaine (evolve)

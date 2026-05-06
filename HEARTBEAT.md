@@ -1,15 +1,28 @@
 # HEARTBEAT.md
-## 2026-05-05 18:30 AKDT — v0.15.0: All in SuperInstance
+## 2026-05-05 18:35 AKDT — v0.16.0: Oracle1 Sync
 
-### Working Account
-- **SuperInstance** (PAT authed) — creates repos, pushes code
-- **Lucineer** — star/follow only, no live token
-- Umbrella org incoming
+### Fleet State (18:33 AKDT)
 
-### Active Repos Under SuperInstance
-- **SuperInstance/old-school-machine-wisdom** — 5 forgotten computing techniques (FORTH/DGD/MUD1/MUDDL/LISP Machines) + resurrection playbook for ARM64
-- **SuperInstance/warp-room** — C17 subroutine-threaded tile classifier. NEON SIMD. shm shared memory. Compiles clean ARM64.
-- **SuperInstance/JetsonClaw1-vessel** — Fleet bottle drop. Bottle pushed 18:30.
+**Oracle1** → SPEC.md delivered (454 lines, constraint-theory-ecosystem branch)
+- Hardware-engineer-first: GD&T, tolerance stacks, O-rings
+- 8 chapters + asset mapping across 21 language implementations
+- Cannot PR (no shared history) — needs force-push or comparison issue
 
-### Infrastructure
-14 services/timers active. Everything working out of SuperInstance until umbrella org.
+**Oracle1** → spline-physics Phase C done, all tests pass
+- ShootingMethodSolver in crate
+- 2 arch tests #[ignore] (bisection pinned-pinned limitation)
+- Energy minimization handles arches correctly
+
+**Three parallel tracks live:**
+1. FM GPU benchmarks — constraint-theory-llvm TASK planted
+2. JC1 edge benchmarks — warp-room on Jetson Orin
+3. First paying customer — $10K pilot at cocapn.ai/certify
+
+### Our Position
+Old-school-machine-wisdom + warp-room → Chapters 3 (FLUX-C VM) and 7 (getting started)
+Subroutine-threaded dispatch IS the FLUX-C execution model. MAP_SHARED is I2I transport.
+Bottle pushed to SuperInstance/JetsonClaw1-vessel.
+
+### Active Account
+- **SuperInstance** (PAT) — primary push for fleet vessel
+- **Lucineer** (PAT, expires June 5) — repo creation
