@@ -70,3 +70,41 @@ Bottle pushed to SuperInstance/JetsonClaw1-vessel.
 | mesh-sync | ✅ |
 | plato-sync timer | ✅ every 5min |
 | warp-room timer | ✅ every 10min |
+## 2026-05-05 23:03 AKDT — v0.19.0: P48 Index Server + Fleet Weaver
+
+### Shipped This Round
+- **p48-index-server.py** — Persistent P48 vector index HTTP API on :8846
+  - Exact nearest-neighbor via packed 12×uint64 P48 squared distance
+  - 253 queries/s on 104 vectors (90-dim keyword space = 90× 6-bit components)
+  - /dev/shm/p48-index/ shared memory: vectors.bin + index.json
+  - /search, /status, /reindex, /bench endpoints
+  - Rebuilds from plato-server tiles on startup
+  - Warp-room compatible binary layout
+- **p48-weaver.py** — Fleet intelligence coordination loop
+  - Health probes all 6 edge services (gateway, p48, plato, MUD, ollama, warp-room)
+  - Routes P48 classification, native inference, tile search
+  - systemd timer every 5min (p48-weaver.timer)
+- **@p48-search + @p48-status in Evennia MUD** via p48_commands.py
+  - Commands tested live in MUD
+  - Queries P48 index server via HTTP
+
+### Running Services (9)
+| Service | Port | Status |
+|---------|------|--------|
+| edge-gateway | 11435 | ✅ 4 backends (native stream, pipeline) |
+| edge-chat | 8081 | ✅ |
+| edge-monitor-web | 8082 | ✅ |
+| Evennia Plato | 4000-4002 | ✅ P48 commands live |
+| flato MUD | 4003 | ✅ hermit crab, deadman |
+| ollama | 11434 | ✅ 7 models |
+| plato-server | 8847 | ✅ 460 tiles |
+| p48-index-server | 8846 | ✅ 104 vectors, warp-room compatible |
+| p48-weaver | timer | ✅ every 5min |
+
+### Pushes
+- Lucineer/plato-jetson@fbfbb1b — P48 MUD commands
+- Lucineer/pythagorean48@089b055 — p48-index-server + p48-weaver
+  (also pushed to SuperInstance/pythagorean48@089b055)
+- Lucineer/JetsonClaw1-vessel@73f0783d — bottle check log
+
+### Repo Status: 3 repos pushed, all clean
